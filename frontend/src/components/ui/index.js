@@ -6,3 +6,7 @@ export { default as Badge } from './Badge';
 export { default as Table } from './Table';
 export { default as Progress } from './Progress';
 export { default as Modal } from './Modal';
+export { default as RadarChart } from './RadarChart';
+export { default as LineChart } from './LineChart';
+export { default as SearchBar } from './SearchBar';
+export { default as Toast } from './Toast';

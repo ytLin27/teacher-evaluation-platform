@@ -1,0 +1,211 @@
+# Grafana数据源配置
+# 配置Prometheus、InfluxDB等数据源用于监控
+
+apiVersion: 1
+
+datasources:
+  # Prometheus数据源 - 主要监控指标
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      httpMethod: POST
+      manageAlerts: true
+      timeInterval: '30s'
+      prometheusType: Prometheus
+      prometheusVersion: 2.40.0
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: jaeger
+          urlDisplayLabel: 'View in Jaeger'
+    secureJsonData: {}
+
+  # InfluxDB数据源 - 时序业务数据
+  - name: InfluxDB
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    database: teacher_metrics
+    user: eval_user
+    editable: true
+    jsonData:
+      version: InfluxQL
+      timeInterval: '15s'
+      httpMode: GET
+    secureJsonData:
+      password: eval_pass
+
+  # InfluxDB 2.x数据源 - 新版本时序数据
+  - name: InfluxDB-v2
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    editable: true
+    jsonData:
+      version: Flux
+      organization: teacher-eval
+      defaultBucket: teacher_metrics
+      timeInterval: '15s'
+    secureJsonData:
+      token: your_influx_token
+
+  # Loki数据源 - 日志聚合（如果需要）
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: true
+    jsonData:
+      timeout: 60
+      maxLines: 1000
+      derivedFields:
+        - name: TraceID
+          matcherRegex: '"traceId":"(\w+)"'
+          url: '${__value.raw}'
+          datasourceUid: jaeger
+
+  # Jaeger数据源 - 分布式追踪（可选）
+  - name: Jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger:16686
+    editable: true
+    uid: jaeger
+    jsonData:
+      timeout: 30
+      nodeGraph:
+        enabled: true
+
+  # PostgreSQL数据源 - 业务数据直接查询
+  - name: PostgreSQL
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    database: eval_db
+    user: eval_user
+    editable: true
+    jsonData:
+      sslmode: disable
+      maxOpenConns: 10
+      maxIdleConns: 2
+      connMaxLifetime: 14400
+      postgresVersion: 1500
+      timescaledb: false
+    secureJsonData:
+      password: eval_pass
+
+  # MongoDB数据源 - 文档数据查询（通过插件）
+  - name: MongoDB
+    type: grafana-mongodb-datasource
+    access: proxy
+    url: mongodb://mongodb:27017
+    database: documents
+    editable: true
+    jsonData:
+      authType: credentials
+      tlsAuth: false
+      tlsAuthWithCACert: false
+    secureJsonData:
+      username: eval_user
+      password: eval_pass
+
+  # Redis数据源 - 缓存监控
+  - name: Redis
+    type: redis-datasource
+    access: proxy
+    url: redis://redis:6379
+    editable: true
+    jsonData:
+      client: standalone
+      poolSize: 5
+      timeout: 10
+      pingInterval: 0
+      pipelineWindow: 0
+    secureJsonData: {}
+
+  # TestData数据源 - 测试和演示用
+  - name: TestData
+    type: testdata
+    access: proxy
+    editable: true
+    jsonData: {}
+
+  # CloudWatch数据源 - AWS监控（如果部署到AWS）
+  # - name: CloudWatch
+  #   type: cloudwatch
+  #   access: proxy
+  #   editable: true
+  #   jsonData:
+  #     authType: default
+  #     defaultRegion: us-east-1
+  #   secureJsonData:
+  #     accessKey: YOUR_ACCESS_KEY
+  #     secretKey: YOUR_SECRET_KEY
+
+  # Azure Monitor数据源 - Azure监控（如果部署到Azure）
+  # - name: Azure Monitor
+  #   type: grafana-azure-monitor-datasource
+  #   access: proxy
+  #   editable: true
+  #   jsonData:
+  #     azureAuthType: msi
+  #     subscriptionId: YOUR_SUBSCRIPTION_ID
+
+# 通知渠道配置
+notifiers:
+  - name: Email Alerts
+    type: email
+    uid: email-notifier
+    settings:
+      addresses: "admin@teacher-eval.local;ops@teacher-eval.local"
+      subject: "[Grafana Alert] {{ .Title }}"
+      body: |
+        {{ range .Alerts }}
+        Alert: {{ .AlertName }}
+        Status: {{ .Status }}
+        Message: {{ .Message }}
+        Value: {{ .Value }}
+        Labels:
+        {{ range $key, $value := .Labels }}
+          {{ $key }}: {{ $value }}
+        {{ end }}
+        {{ end }}
+
+  - name: Slack Alerts
+    type: slack
+    uid: slack-notifier
+    settings:
+      url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+      channel: "#teacher-eval-alerts"
+      username: "Grafana"
+      title: "{{ .Title }}"
+      text: |
+        {{ range .Alerts }}
+        *Alert:* {{ .AlertName }}
+        *Status:* {{ .Status }}
+        *Message:* {{ .Message }}
+        *Value:* {{ .Value }}
+        *Runbook:* {{ .RunbookURL }}
+        {{ end }}
+
+  - name: Teams Alerts
+    type: teams
+    uid: teams-notifier
+    settings:
+      url: "https://outlook.office.com/webhook/YOUR_TEAMS_WEBHOOK"
+      title: "Teacher Evaluation Platform Alert"
+      message: |
+        {{ range .Alerts }}
+        **Alert:** {{ .AlertName }}
+        **Status:** {{ .Status }}
+        **Message:** {{ .Message }}
+        **Value:** {{ .Value }}
+        {{ end }}
+
+# 删除默认数据源配置
+deleteDatasources:
+  - name: prometheus
+    orgId: 1

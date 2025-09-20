@@ -2,6 +2,40 @@ import React from 'react';
 import { Card, Table, Badge, Button, Progress } from '../components/ui';
 
 const Professional = () => {
+  // Event handlers for buttons
+  const handleDownloadCV = async () => {
+    console.log('Download CV clicked');
+    try {
+      // 导出专业发展数据为CSV格式
+      const response = await fetch('http://localhost:3001/api/exports/professional/1?format=csv');
+
+      if (response.ok) {
+        // 创建下载链接
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `professional_development_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        alert('Professional development data exported successfully!');
+      } else {
+        alert('Failed to export professional data. Please try again.');
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Export failed due to network error. Please check your connection.');
+    }
+  };
+
+  const handleAddCertification = () => {
+    console.log('Add Certification clicked');
+    alert('Add Certification functionality will be implemented soon!');
+  };
+
   // Mock professional development data
   const education = [
     {
@@ -198,10 +232,10 @@ const Professional = () => {
           </p>
         </div>
         <div className="mt-4 flex space-x-3 md:mt-0 md:ml-4">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleDownloadCV}>
             Download CV
           </Button>
-          <Button variant="primary" size="sm">
+          <Button variant="primary" size="sm" onClick={handleAddCertification}>
             Add Certification
           </Button>
         </div>

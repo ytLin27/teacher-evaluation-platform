@@ -7,10 +7,14 @@ import Research from './pages/Research';
 import Service from './pages/Service';
 import Professional from './pages/Professional';
 import Career from './pages/Career';
+import AllPublications from './pages/AllPublications';
+import AllGrants from './pages/AllGrants';
+import { ToastProvider } from './contexts/ToastContext';
 
 function App() {
   return (
-    <Router>
+    <ToastProvider>
+      <Router>
       <Routes>
         <Route path="/" element={
           <Layout title="Performance Overview">
@@ -42,8 +46,19 @@ function App() {
             <Career />
           </Layout>
         } />
+        <Route path="/research/publications" element={
+          <Layout title="All Publications">
+            <AllPublications />
+          </Layout>
+        } />
+        <Route path="/research/grants" element={
+          <Layout title="All Grants">
+            <AllGrants />
+          </Layout>
+        } />
       </Routes>
-    </Router>
+      </Router>
+    </ToastProvider>
   );
 }
 

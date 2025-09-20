@@ -138,6 +138,18 @@ class Database {
     `);
 
     console.log('✅ 数据库表结构初始化完成');
+    console.log('💡 使用 POST /api/init-data 端点来初始化示例数据');
+  }
+
+  initializeSeedData() {
+    // 延迟导入以避免循环依赖
+    const { insertSeedData } = require('./seedData');
+    try {
+      insertSeedData();
+      console.log('✅ 示例数据初始化完成');
+    } catch (error) {
+      console.error('❌ 示例数据初始化失败:', error.message);
+    }
   }
 
   // 获取数据库实例

@@ -1,0 +1,803 @@
+openapi: 3.0.3
+info:
+  title: Faux Schoolday API
+  description: |
+    High-fidelity mock implementation of Schoolday platform APIs for teacher evaluation system integration.
+
+    This mock service provides comprehensive simulation of:
+    - OAuth 2.0 authentication flows
+    - OneRoster v1.1 standard for educational data exchange
+    - Discovery API for district and school information
+    - Academy API for professional development
+    - Webhook system for real-time event notifications
+
+    All APIs are designed to match Schoolday's actual behavior for seamless local development and testing.
+  version: 1.0.0
+  contact:
+    name: Teacher Evaluation Platform Team
+    email: dev@teacher-eval.local
+  license:
+    name: MIT License
+
+servers:
+  - url: http://localhost:3006/api
+    description: Local development server
+  - url: https://faux-schoolday.teacher-eval.local/api
+    description: Containerized environment
+
+security:
+  - BearerAuth: []
+
+paths:
+  # OAuth 2.0 Endpoints
+  /oauth/.well-known/oauth-authorization-server:
+    get:
+      tags: [OAuth 2.0]
+      summary: OAuth server metadata
+      description: Discovery endpoint for OAuth 2.0 server configuration
+      security: []
+      responses:
+        '200':
+          description: OAuth server metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthServerMetadata'
+
+  /oauth/authorize:
+    get:
+      tags: [OAuth 2.0]
+      summary: Authorization endpoint
+      description: Initiate OAuth 2.0 authorization code flow
+      security: []
+      parameters:
+        - name: client_id
+          in: query
+          required: true
+          schema:
+            type: string
+          example: teacher-eval-demo
+        - name: redirect_uri
+          in: query
+          required: true
+          schema:
+            type: string
+          example: http://localhost:5173/callback
+        - name: response_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [code]
+        - name: scope
+          in: query
+          schema:
+            type: string
+          example: read:districts read:schools read:teachers
+        - name: state
+          in: query
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to callback with authorization code
+        '400':
+          description: Invalid request parameters
+
+  /oauth/token:
+    post:
+      tags: [OAuth 2.0]
+      summary: Token endpoint
+      description: Exchange authorization code or credentials for access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/AuthorizationCodeTokenRequest'
+                - $ref: '#/components/schemas/ClientCredentialsTokenRequest'
+                - $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Access token response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Invalid request
+        '401':
+          description: Invalid client credentials
+
+  # Discovery API Endpoints
+  /discovery/districts:
+    get:
+      tags: [Discovery]
+      summary: List districts
+      description: Get list of school districts with filtering and pagination
+      parameters:
+        - name: state
+          in: query
+          schema:
+            type: string
+          example: CA
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: include_schools
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of districts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DistrictListResponse'
+
+  /discovery/districts/{id}:
+    get:
+      tags: [Discovery]
+      summary: Get district details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: District details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DistrictDetailResponse'
+        '404':
+          description: District not found
+
+  # OneRoster API Endpoints
+  /ims/oneroster/v1p1/orgs:
+    get:
+      tags: [OneRoster]
+      summary: List organizations
+      description: Get organizations (districts and schools) per OneRoster v1.1 standard
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: sort
+          in: query
+          schema:
+            type: string
+            default: dateLastModified
+        - name: orderBy
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+        - name: filter
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of organizations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationListResponse'
+
+  /ims/oneroster/v1p1/users:
+    get:
+      tags: [OneRoster]
+      summary: List users (teachers)
+      description: Get list of users per OneRoster v1.1 standard
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: filter
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+
+  # Academy API Endpoints
+  /academy/courses:
+    get:
+      tags: [Academy]
+      summary: List professional development courses
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+          example: Instructional Design
+        - name: level
+          in: query
+          schema:
+            type: string
+            enum: [Beginner, Intermediate, Advanced]
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [Online, Hybrid, In-Person]
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of courses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseListResponse'
+
+  /academy/recommendations:
+    get:
+      tags: [Academy]
+      summary: Get course recommendations
+      description: AI-powered course recommendations for teachers
+      parameters:
+        - name: teacher_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: subject_area
+          in: query
+          schema:
+            type: string
+        - name: skill_level
+          in: query
+          schema:
+            type: string
+        - name: career_goals
+          in: query
+          schema:
+            type: string
+        - name: time_availability
+          in: query
+          schema:
+            type: integer
+          description: Hours per week
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Course recommendations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseRecommendationsResponse'
+
+  # Webhook API Endpoints
+  /webhooks/subscriptions:
+    get:
+      tags: [Webhooks]
+      summary: List webhook subscriptions
+      parameters:
+        - name: organization_id
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, paused, disabled]
+      responses:
+        '200':
+          description: List of webhook subscriptions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookSubscriptionListResponse'
+
+    post:
+      tags: [Webhooks]
+      summary: Create webhook subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWebhookSubscriptionRequest'
+      responses:
+        '201':
+          description: Webhook subscription created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookSubscriptionResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # OAuth Schemas
+    OAuthServerMetadata:
+      type: object
+      properties:
+        issuer:
+          type: string
+        authorization_endpoint:
+          type: string
+        token_endpoint:
+          type: string
+        scopes_supported:
+          type: array
+          items:
+            type: string
+        response_types_supported:
+          type: array
+          items:
+            type: string
+        grant_types_supported:
+          type: array
+          items:
+            type: string
+
+    AuthorizationCodeTokenRequest:
+      type: object
+      properties:
+        grant_type:
+          type: string
+          enum: [authorization_code]
+        code:
+          type: string
+        redirect_uri:
+          type: string
+        client_id:
+          type: string
+        client_secret:
+          type: string
+      required: [grant_type, code, redirect_uri, client_id, client_secret]
+
+    ClientCredentialsTokenRequest:
+      type: object
+      properties:
+        grant_type:
+          type: string
+          enum: [client_credentials]
+        scope:
+          type: string
+        client_id:
+          type: string
+        client_secret:
+          type: string
+      required: [grant_type, client_id, client_secret]
+
+    RefreshTokenRequest:
+      type: object
+      properties:
+        grant_type:
+          type: string
+          enum: [refresh_token]
+        refresh_token:
+          type: string
+        client_id:
+          type: string
+        client_secret:
+          type: string
+      required: [grant_type, refresh_token, client_id, client_secret]
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          enum: [Bearer]
+        expires_in:
+          type: integer
+        refresh_token:
+          type: string
+        scope:
+          type: string
+
+    # Discovery Schemas
+    District:
+      type: object
+      properties:
+        sourcedId:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [district]
+        identifier:
+          type: string
+        status:
+          type: string
+          enum: [active, tobedeleted]
+        dateLastModified:
+          type: string
+          format: date-time
+        geographic_info:
+          type: object
+          properties:
+            state:
+              type: string
+            region:
+              type: string
+            county:
+              type: string
+            timezone:
+              type: string
+        enrollment_stats:
+          type: object
+          properties:
+            total_students:
+              type: integer
+            total_teachers:
+              type: integer
+            total_schools:
+              type: integer
+
+    DistrictListResponse:
+      type: object
+      properties:
+        districts:
+          type: array
+          items:
+            $ref: '#/components/schemas/District'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    DistrictDetailResponse:
+      type: object
+      properties:
+        district:
+          allOf:
+            - $ref: '#/components/schemas/District'
+            - type: object
+              properties:
+                schools:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/School'
+
+    # OneRoster Schemas
+    Organization:
+      type: object
+      properties:
+        sourcedId:
+          type: string
+        status:
+          type: string
+          enum: [active, tobedeleted]
+        dateLastModified:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+        name:
+          type: string
+        type:
+          type: string
+          enum: [district, school, course, class]
+        identifier:
+          type: string
+        parent:
+          type: object
+          properties:
+            href:
+              type: string
+            sourcedId:
+              type: string
+            type:
+              type: string
+
+    OrganizationListResponse:
+      type: object
+      properties:
+        orgs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Organization'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    User:
+      type: object
+      properties:
+        sourcedId:
+          type: string
+        status:
+          type: string
+          enum: [active, tobedeleted]
+        dateLastModified:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+        username:
+          type: string
+        givenName:
+          type: string
+        familyName:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [teacher, student, administrator]
+        identifier:
+          type: string
+
+    UserListResponse:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    # Academy Schemas
+    Course:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        category:
+          type: string
+        level:
+          type: string
+          enum: [Beginner, Intermediate, Advanced]
+        format:
+          type: string
+          enum: [Online, Hybrid, In-Person]
+        duration_hours:
+          type: integer
+        price:
+          type: number
+        rating:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        next_start_date:
+          type: string
+          format: date
+
+    CourseListResponse:
+      type: object
+      properties:
+        courses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Course'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        categories:
+          type: array
+          items:
+            type: string
+
+    CourseRecommendation:
+      allOf:
+        - $ref: '#/components/schemas/Course'
+        - type: object
+          properties:
+            recommendation_score:
+              type: number
+            recommendation_reasons:
+              type: array
+              items:
+                type: string
+            estimated_impact:
+              type: object
+              properties:
+                teaching_effectiveness:
+                  type: string
+                student_engagement:
+                  type: string
+                career_advancement:
+                  type: string
+
+    CourseRecommendationsResponse:
+      type: object
+      properties:
+        recommendations:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseRecommendation'
+        recommendation_metadata:
+          type: object
+          properties:
+            teacher_id:
+              type: string
+            algorithm_version:
+              type: string
+            generated_at:
+              type: string
+              format: date-time
+
+    # Webhook Schemas
+    WebhookSubscription:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+        organization_id:
+          type: string
+          nullable: true
+        description:
+          type: string
+        status:
+          type: string
+          enum: [active, paused, disabled]
+        created_at:
+          type: string
+          format: date-time
+        last_delivery:
+          type: string
+          format: date-time
+          nullable: true
+        delivery_success_rate:
+          type: number
+        total_deliveries:
+          type: integer
+        failed_deliveries:
+          type: integer
+
+    WebhookSubscriptionListResponse:
+      type: object
+      properties:
+        subscriptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/WebhookSubscription'
+        total:
+          type: integer
+
+    CreateWebhookSubscriptionRequest:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+        organization_id:
+          type: string
+          nullable: true
+        description:
+          type: string
+        secret:
+          type: string
+      required: [url, events]
+
+    WebhookSubscriptionResponse:
+      type: object
+      properties:
+        subscription:
+          $ref: '#/components/schemas/WebhookSubscription'
+
+    # Common Schemas
+    School:
+      type: object
+      properties:
+        sourcedId:
+          type: string
+        name:
+          type: string
+        schoolType:
+          type: string
+          enum: [elementary, middle, high, k12]
+        address:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+        hasMore:
+          type: boolean
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: string
+
+tags:
+  - name: OAuth 2.0
+    description: Authentication and authorization endpoints
+  - name: Discovery
+    description: District and school discovery services
+  - name: OneRoster
+    description: Educational data exchange standard (v1.1)
+  - name: Academy
+    description: Professional development course management
+  - name: Webhooks
+    description: Real-time event notification system

@@ -1,9 +1,58 @@
-import React from 'react';
-import { Card, Progress, Badge } from '../components/ui';
+import React, { useState, useEffect } from 'react';
+import { Card, Progress, Badge, RadarChart } from '../components/ui';
 
 const Overview = () => {
-  // Mock data for demonstration
-  const metrics = {
+  const [teacherData, setTeacherData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch teacher data from API
+  useEffect(() => {
+    const fetchTeacherData = async () => {
+      try {
+        const response = await fetch('http://localhost:3001/api/teachers/1/evaluation');
+        if (!response.ok) {
+          throw new Error('Failed to fetch teacher data');
+        }
+        const data = await response.json();
+        setTeacherData(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTeacherData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-300 rounded w-1/3 mb-4"></div>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-24 bg-gray-300 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <strong className="font-bold">Error: </strong>
+          <span className="block sm:inline">{error}</span>
+        </div>
+      </div>
+    );
+  }
+
+  const metrics = teacherData?.evaluation || {
     overall_score: 4.3,
     teaching_effectiveness: 4.5,
     research_output: 4.1,
@@ -11,11 +60,41 @@ const Overview = () => {
     grant_funding: 3.8
   };
 
+  // Prepare radar chart data
+  const radarData = {
+    labels: [
+      'Teaching Effectiveness',
+      'Research Output',
+      'Service Contribution',
+      'Grant Funding',
+      'Professional Development'
+    ],
+    datasets: [
+      {
+        label: 'Performance Score',
+        data: [
+          metrics.teaching_effectiveness || 4.5,
+          metrics.research_output || 4.1,
+          metrics.service_contribution || 4.0,
+          metrics.grant_funding || 3.8,
+          4.2 // Professional development placeholder
+        ],
+        backgroundColor: 'rgba(99, 102, 241, 0.2)',
+        borderColor: 'rgba(99, 102, 241, 1)',
+        borderWidth: 2,
+        pointBackgroundColor: 'rgba(99, 102, 241, 1)',
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: 'rgba(99, 102, 241, 1)',
+      },
+    ],
+  };
+
   const stats = {
-    total_evaluations: 156,
-    publications: 23,
-    active_grants: 3,
-    service_hours: 120
+    total_evaluations: teacherData?.metrics?.teaching?.total_evaluations || 156,
+    publications: teacherData?.metrics?.research?.publications || 23,
+    active_grants: teacherData?.metrics?.research?.grants || 3,
+    service_hours: teacherData?.metrics?.service?.total_hours || 120
   };
 
   const recentActivity = [
@@ -111,64 +190,76 @@ const Overview = () => {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Performance Breakdown */}
+        {/* Performance Radar Chart */}
         <div className="lg:col-span-2">
           <Card>
             <Card.Header>
-              <Card.Title>Performance Breakdown</Card.Title>
+              <Card.Title>Performance Overview</Card.Title>
             </Card.Header>
             <Card.Content>
-              <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                  <div className="flex justify-between text-sm font-medium text-gray-900">
-                    <span>Teaching Effectiveness</span>
-                    <span>{metrics.teaching_effectiveness}/5.0</span>
-                  </div>
-                  <Progress
-                    value={metrics.teaching_effectiveness}
-                    max={5}
-                    color="primary"
-                    className="mt-2"
+                  <RadarChart
+                    data={radarData}
+                    title="Performance Radar"
+                    className="mb-4"
                   />
                 </div>
-
                 <div>
-                  <div className="flex justify-between text-sm font-medium text-gray-900">
-                    <span>Research Output</span>
-                    <span>{metrics.research_output}/5.0</span>
-                  </div>
-                  <Progress
-                    value={metrics.research_output}
-                    max={5}
-                    color="secondary"
-                    className="mt-2"
-                  />
-                </div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Performance Breakdown</h4>
+                  <div className="space-y-6">
+                    <div>
+                      <div className="flex justify-between text-sm font-medium text-gray-900">
+                        <span>Teaching Effectiveness</span>
+                        <span>{metrics.teaching_effectiveness}/5.0</span>
+                      </div>
+                      <Progress
+                        value={metrics.teaching_effectiveness}
+                        max={5}
+                        color="primary"
+                        className="mt-2"
+                      />
+                    </div>
 
-                <div>
-                  <div className="flex justify-between text-sm font-medium text-gray-900">
-                    <span>Service Contribution</span>
-                    <span>{metrics.service_contribution}/5.0</span>
-                  </div>
-                  <Progress
-                    value={metrics.service_contribution}
-                    max={5}
-                    color="success"
-                    className="mt-2"
-                  />
-                </div>
+                    <div>
+                      <div className="flex justify-between text-sm font-medium text-gray-900">
+                        <span>Research Output</span>
+                        <span>{metrics.research_output}/5.0</span>
+                      </div>
+                      <Progress
+                        value={metrics.research_output}
+                        max={5}
+                        color="secondary"
+                        className="mt-2"
+                      />
+                    </div>
 
-                <div>
-                  <div className="flex justify-between text-sm font-medium text-gray-900">
-                    <span>Grant Funding</span>
-                    <span>{metrics.grant_funding}/5.0</span>
+                    <div>
+                      <div className="flex justify-between text-sm font-medium text-gray-900">
+                        <span>Service Contribution</span>
+                        <span>{metrics.service_contribution}/5.0</span>
+                      </div>
+                      <Progress
+                        value={metrics.service_contribution}
+                        max={5}
+                        color="success"
+                        className="mt-2"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-sm font-medium text-gray-900">
+                        <span>Grant Funding</span>
+                        <span>{metrics.grant_funding}/5.0</span>
+                      </div>
+                      <Progress
+                        value={metrics.grant_funding}
+                        max={5}
+                        color="warning"
+                        className="mt-2"
+                      />
+                    </div>
                   </div>
-                  <Progress
-                    value={metrics.grant_funding}
-                    max={5}
-                    color="warning"
-                    className="mt-2"
-                  />
                 </div>
               </div>
             </Card.Content>

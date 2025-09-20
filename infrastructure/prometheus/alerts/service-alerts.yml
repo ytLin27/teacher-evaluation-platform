@@ -1,0 +1,358 @@
+# 服务级别告警规则
+# 监控微服务健康状态和性能指标
+
+groups:
+  - name: service-health
+    rules:
+      # 服务可用性告警
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} on instance {{ $labels.instance }} has been down for more than 1 minute."
+          runbook_url: "https://docs.teacher-eval.local/runbook/service-down"
+
+      # HTTP错误率告警
+      - alert: HighErrorRate
+        expr: |
+          (
+            rate(http_requests_total{status=~"5.."}[5m]) /
+            rate(http_requests_total[5m])
+          ) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High error rate on {{ $labels.job }}"
+          description: "Error rate is {{ $value | humanizePercentage }} on {{ $labels.job }}."
+
+      # 响应时间告警
+      - alert: HighResponseTime
+        expr: |
+          histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 3m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High response time on {{ $labels.job }}"
+          description: "95th percentile response time is {{ $value }}s on {{ $labels.job }}."
+
+      # CPU使用率告警
+      - alert: HighCPUUsage
+        expr: |
+          (
+            rate(container_cpu_usage_seconds_total[5m]) * 100
+          ) > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: resource
+        annotations:
+          summary: "High CPU usage on {{ $labels.service_name }}"
+          description: "CPU usage is {{ $value | humanizePercentage }} on {{ $labels.service_name }}."
+
+      # 内存使用率告警
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            container_memory_usage_bytes / container_spec_memory_limit_bytes * 100
+          ) > 85
+        for: 5m
+        labels:
+          severity: warning
+          category: resource
+        annotations:
+          summary: "High memory usage on {{ $labels.service_name }}"
+          description: "Memory usage is {{ $value | humanizePercentage }} on {{ $labels.service_name }}."
+
+      # 内存泄漏检测
+      - alert: MemoryLeak
+        expr: |
+          increase(container_memory_usage_bytes[1h]) > 100000000  # 100MB增长
+        for: 10m
+        labels:
+          severity: critical
+          category: resource
+        annotations:
+          summary: "Potential memory leak in {{ $labels.service_name }}"
+          description: "Memory usage increased by {{ $value | humanizeBytes }} in the last hour."
+
+  - name: database-alerts
+    rules:
+      # PostgreSQL连接数告警
+      - alert: PostgreSQLHighConnections
+        expr: |
+          pg_stat_database_numbackends / pg_settings_max_connections * 100 > 80
+        for: 2m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "PostgreSQL high connection usage"
+          description: "PostgreSQL connection usage is {{ $value | humanizePercentage }}."
+
+      # PostgreSQL复制延迟
+      - alert: PostgreSQLReplicationLag
+        expr: |
+          pg_stat_replication_replay_lag > 300  # 5分钟
+        for: 1m
+        labels:
+          severity: critical
+          category: database
+        annotations:
+          summary: "PostgreSQL replication lag is high"
+          description: "Replication lag is {{ $value }}s."
+
+      # MongoDB连接数告警
+      - alert: MongoDBHighConnections
+        expr: |
+          mongodb_connections{state="current"} / mongodb_connections{state="available"} * 100 > 80
+        for: 2m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "MongoDB high connection usage"
+          description: "MongoDB connection usage is {{ $value | humanizePercentage }}."
+
+      # Redis内存使用告警
+      - alert: RedisHighMemoryUsage
+        expr: |
+          redis_memory_used_bytes / redis_memory_max_bytes * 100 > 90
+        for: 2m
+        labels:
+          severity: critical
+          category: database
+        annotations:
+          summary: "Redis high memory usage"
+          description: "Redis memory usage is {{ $value | humanizePercentage }}."
+
+      # InfluxDB写入错误率
+      - alert: InfluxDBHighWriteErrors
+        expr: |
+          rate(influxdb_write_errors_total[5m]) > 1
+        for: 2m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "InfluxDB high write error rate"
+          description: "Write error rate is {{ $value }} errors/second."
+
+  - name: business-logic-alerts
+    rules:
+      # 评价提交失败率
+      - alert: HighEvaluationFailureRate
+        expr: |
+          (
+            rate(evaluation_submissions_total{status="failed"}[10m]) /
+            rate(evaluation_submissions_total[10m])
+          ) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "High evaluation submission failure rate"
+          description: "Evaluation failure rate is {{ $value | humanizePercentage }}."
+
+      # 认证失败率过高
+      - alert: HighAuthenticationFailureRate
+        expr: |
+          (
+            rate(auth_attempts_total{status="failed"}[5m]) /
+            rate(auth_attempts_total[5m])
+          ) > 0.2
+        for: 3m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Authentication failure rate is {{ $value | humanizePercentage }}."
+
+      # Schoolday API集成错误
+      - alert: SchooldayIntegrationErrors
+        expr: |
+          rate(schoolday_api_errors_total[5m]) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+          category: integration
+        annotations:
+          summary: "Schoolday API integration errors"
+          description: "Schoolday API error rate is {{ $value }} errors/second."
+
+      # 异常分析结果数量异常
+      - alert: UnexpectedAnomalyRate
+        expr: |
+          rate(analytics_anomalies_detected_total[1h]) > 10
+        for: 10m
+        labels:
+          severity: warning
+          category: analytics
+        annotations:
+          summary: "Unusually high anomaly detection rate"
+          description: "Detected {{ $value }} anomalies per hour, which is above normal."
+
+  - name: system-alerts
+    rules:
+      # 磁盘空间不足
+      - alert: DiskSpaceRunningLow
+        expr: |
+          (
+            node_filesystem_free_bytes / node_filesystem_size_bytes * 100
+          ) < 15
+        for: 2m
+        labels:
+          severity: warning
+          category: system
+        annotations:
+          summary: "Disk space running low"
+          description: "Disk space is only {{ $value | humanizePercentage }} available on {{ $labels.device }}."
+
+      # 磁盘空间严重不足
+      - alert: DiskSpaceCritical
+        expr: |
+          (
+            node_filesystem_free_bytes / node_filesystem_size_bytes * 100
+          ) < 5
+        for: 1m
+        labels:
+          severity: critical
+          category: system
+        annotations:
+          summary: "Disk space critically low"
+          description: "Disk space is only {{ $value | humanizePercentage }} available on {{ $labels.device }}."
+
+      # 系统负载过高
+      - alert: HighSystemLoad
+        expr: |
+          node_load1 / count(count(node_cpu_seconds_total) by (cpu)) by (instance) > 2
+        for: 5m
+        labels:
+          severity: warning
+          category: system
+        annotations:
+          summary: "High system load"
+          description: "System load is {{ $value }} on {{ $labels.instance }}."
+
+      # 网络连接数过高
+      - alert: HighNetworkConnections
+        expr: |
+          node_netstat_Tcp_CurrEstab > 5000
+        for: 5m
+        labels:
+          severity: warning
+          category: network
+        annotations:
+          summary: "High number of TCP connections"
+          description: "Current TCP connections: {{ $value }} on {{ $labels.instance }}."
+
+  - name: keycloak-alerts
+    rules:
+      # Keycloak响应时间
+      - alert: KeycloakHighResponseTime
+        expr: |
+          histogram_quantile(0.95, rate(keycloak_request_duration_bucket[5m])) > 2
+        for: 3m
+        labels:
+          severity: warning
+          category: authentication
+        annotations:
+          summary: "Keycloak high response time"
+          description: "95th percentile response time is {{ $value }}s."
+
+      # Keycloak登录失败率
+      - alert: KeycloakHighLoginFailures
+        expr: |
+          rate(keycloak_login_attempts{outcome="error"}[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "High Keycloak login failure rate"
+          description: "Login failure rate is {{ $value }} failures/second."
+
+      # Keycloak会话数量异常
+      - alert: KeycloakUnusualSessionCount
+        expr: |
+          keycloak_user_sessions > 1000
+        for: 5m
+        labels:
+          severity: info
+          category: capacity
+        annotations:
+          summary: "Unusual Keycloak session count"
+          description: "Active user sessions: {{ $value }}."
+
+  - name: synthetic-monitoring
+    rules:
+      # 综合可用性检查
+      - alert: SyntheticCheckFailed
+        expr: |
+          probe_success == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Synthetic check failed for {{ $labels.instance }}"
+          description: "Endpoint {{ $labels.instance }} is not responding to synthetic checks."
+
+      # SSL证书即将过期
+      - alert: SSLCertificateExpiringSoon
+        expr: |
+          probe_ssl_earliest_cert_expiry - time() < 604800  # 7天
+        for: 1h
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "SSL certificate expiring soon"
+          description: "SSL certificate for {{ $labels.instance }} expires in {{ $value | humanizeDuration }}."
+
+  - name: data-quality-alerts
+    rules:
+      # 数据质量分数下降
+      - alert: DataQualityDegraded
+        expr: |
+          analytics_data_quality_score < 0.8
+        for: 10m
+        labels:
+          severity: warning
+          category: data_quality
+        annotations:
+          summary: "Data quality score degraded"
+          description: "Data quality score is {{ $value }}, below acceptable threshold."
+
+      # 评价数据异常率过高
+      - alert: HighEvaluationAnomalyRate
+        expr: |
+          analytics_evaluation_anomaly_rate > 15  # 15%
+        for: 15m
+        labels:
+          severity: warning
+          category: data_quality
+        annotations:
+          summary: "High evaluation data anomaly rate"
+          description: "Anomaly rate in evaluation data is {{ $value }}%."
+
+      # 预测模型准确性下降
+      - alert: PredictionModelAccuracyDrop
+        expr: |
+          analytics_prediction_accuracy < 0.7
+        for: 30m
+        labels:
+          severity: warning
+          category: analytics
+        annotations:
+          summary: "Prediction model accuracy dropped"
+          description: "Prediction model accuracy is {{ $value }}, below acceptable threshold."

@@ -38,6 +38,7 @@ app.use('/api/schoolday', require('./routes/schoolday'));
 app.use('/api/teachers', require('./routes/teachers'));
 app.use('/api/evaluations', require('./routes/evaluations'));
 app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/exports', require('./routes/exports'));
 
 // 健康检查端点
 app.get('/health', (req, res) => {
@@ -113,13 +114,13 @@ app.listen(PORT, () => {
   console.log(`📋 API文档: http://localhost:${PORT}/api/status`);
   console.log(`💚 健康检查: http://localhost:${PORT}/health`);
 
-  // 启动时初始化示例数据
-  setTimeout(() => {
-    try {
-      insertSeedData();
-      console.log('✅ 示例数据初始化完成');
-    } catch (error) {
-      console.error('❌ 示例数据初始化失败:', error.message);
-    }
-  }, 1000);
+  // 启动时初始化示例数据 (已移动到database初始化完成后)
+  // setTimeout(() => {
+  //   try {
+  //     insertSeedData();
+  //     console.log('✅ 示例数据初始化完成');
+  //   } catch (error) {
+  //     console.error('❌ 示例数据初始化失败:', error.message);
+  //   }
+  // }, 1000);
 });

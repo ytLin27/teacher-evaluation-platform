@@ -409,4 +409,253 @@ router.delete('/:id', (req, res) => {
   });
 });
 
+// 添加研究成果
+router.post('/:id/research', (req, res) => {
+  const db = database.getDB();
+  const teacherId = req.params.id;
+  const {
+    type,
+    title,
+    description,
+    date,
+    impact_factor,
+    citation_count,
+    funding_amount,
+    status,
+    url
+  } = req.body;
+
+  // 验证必需字段
+  if (!type || !title) {
+    return res.status(400).json({ error: 'Type and title are required' });
+  }
+
+  const query = `
+    INSERT INTO research_outputs (
+      teacher_id, type, title, description, date, impact_factor,
+      citation_count, funding_amount, status, url, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+  `;
+
+  const params = [
+    teacherId,
+    type,
+    title,
+    description || null,
+    date || null,
+    impact_factor || null,
+    citation_count || 0,
+    funding_amount || null,
+    status || null,
+    url || null
+  ];
+
+  db.run(query, params, function(err) {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    res.status(201).json({
+      id: this.lastID,
+      message: 'Research output added successfully',
+      data: {
+        id: this.lastID,
+        teacher_id: teacherId,
+        type,
+        title,
+        description,
+        date,
+        impact_factor,
+        citation_count,
+        funding_amount,
+        status,
+        url
+      }
+    });
+  });
+});
+
+// 添加服务贡献
+router.post('/:id/service', (req, res) => {
+  const db = database.getDB();
+  const teacherId = req.params.id;
+  const {
+    type,
+    title,
+    organization,
+    role,
+    start_date,
+    end_date,
+    description,
+    workload_hours
+  } = req.body;
+
+  // 验证必需字段
+  if (!type || !title) {
+    return res.status(400).json({ error: 'Type and title are required' });
+  }
+
+  const query = `
+    INSERT INTO service_contributions (
+      teacher_id, type, title, organization, role, start_date,
+      end_date, description, workload_hours, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+  `;
+
+  const params = [
+    teacherId,
+    type,
+    title,
+    organization || null,
+    role || null,
+    start_date || null,
+    end_date || null,
+    description || null,
+    workload_hours || null
+  ];
+
+  db.run(query, params, function(err) {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    res.status(201).json({
+      id: this.lastID,
+      message: 'Service contribution added successfully',
+      data: {
+        id: this.lastID,
+        teacher_id: teacherId,
+        type,
+        title,
+        organization,
+        role,
+        start_date,
+        end_date,
+        description,
+        workload_hours
+      }
+    });
+  });
+});
+
+// 添加专业发展记录
+router.post('/:id/professional-development', (req, res) => {
+  const db = database.getDB();
+  const teacherId = req.params.id;
+  const {
+    type,
+    title,
+    institution,
+    date_completed,
+    duration_hours,
+    certificate_url,
+    description
+  } = req.body;
+
+  // 验证必需字段
+  if (!type || !title) {
+    return res.status(400).json({ error: 'Type and title are required' });
+  }
+
+  const query = `
+    INSERT INTO professional_development (
+      teacher_id, type, title, institution, date_completed,
+      duration_hours, certificate_url, description, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+  `;
+
+  const params = [
+    teacherId,
+    type,
+    title,
+    institution || null,
+    date_completed || null,
+    duration_hours || null,
+    certificate_url || null,
+    description || null
+  ];
+
+  db.run(query, params, function(err) {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    res.status(201).json({
+      id: this.lastID,
+      message: 'Professional development record added successfully',
+      data: {
+        id: this.lastID,
+        teacher_id: teacherId,
+        type,
+        title,
+        institution,
+        date_completed,
+        duration_hours,
+        certificate_url,
+        description
+      }
+    });
+  });
+});
+
+// 添加职业历程记录
+router.post('/:id/career', (req, res) => {
+  const db = database.getDB();
+  const teacherId = req.params.id;
+  const {
+    type,
+    title,
+    organization,
+    start_date,
+    end_date,
+    description,
+    achievement_level
+  } = req.body;
+
+  // 验证必需字段
+  if (!type || !title) {
+    return res.status(400).json({ error: 'Type and title are required' });
+  }
+
+  const query = `
+    INSERT INTO career_history (
+      teacher_id, type, title, organization, start_date,
+      end_date, description, achievement_level, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+  `;
+
+  const params = [
+    teacherId,
+    type,
+    title,
+    organization || null,
+    start_date || null,
+    end_date || null,
+    description || null,
+    achievement_level || null
+  ];
+
+  db.run(query, params, function(err) {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    res.status(201).json({
+      id: this.lastID,
+      message: 'Career history record added successfully',
+      data: {
+        id: this.lastID,
+        teacher_id: teacherId,
+        type,
+        title,
+        organization,
+        start_date,
+        end_date,
+        description,
+        achievement_level
+      }
+    });
+  });
+});
+
 module.exports = router;

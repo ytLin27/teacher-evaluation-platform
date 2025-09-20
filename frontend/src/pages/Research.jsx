@@ -1,7 +1,72 @@
-import React from 'react';
-import { Card, Table, Badge, Button } from '../components/ui';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, Table, Badge, Button, SearchBar } from '../components/ui';
+import AddResearchForm from '../components/forms/AddResearchForm';
+import { useToast } from '../contexts/ToastContext';
 
 const Research = () => {
+  // Navigation hook
+  const navigate = useNavigate();
+
+  // State for managing add form modal
+  const [showAddForm, setShowAddForm] = useState(false);
+
+  // Search state
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Toast hook
+  const { showSuccess, showError } = useToast();
+
+  // Event handlers for buttons
+  const handleExportReport = async () => {
+    console.log('Export Report clicked');
+    try {
+      // 导出研究数据为CSV格式
+      const response = await fetch('http://localhost:3001/api/exports/research/1?format=csv&type=all');
+
+      if (response.ok) {
+        // 创建下载链接
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `research_report_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        showSuccess('Research report exported successfully!');
+      } else {
+        showError('Failed to export research report. Please try again.');
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      showError('Export failed due to network error. Please check your connection.');
+    }
+  };
+
+  const handleAddPublication = () => {
+    console.log('Add Publication clicked');
+    setShowAddForm(true);
+  };
+
+  const handleAddSuccess = (newItem) => {
+    console.log('New research item added:', newItem);
+    // Here you could refresh the data or update the local state
+    // For now, we just close the modal (handled by the form)
+  };
+
+  const handleViewAllPublications = () => {
+    console.log('View All Publications clicked');
+    navigate('/research/publications');
+  };
+
+  const handleViewAllGrants = () => {
+    console.log('View All Grants clicked');
+    navigate('/research/grants');
+  };
+
   // Mock research data
   const publications = [
     {
@@ -126,10 +191,10 @@ const Research = () => {
           </p>
         </div>
         <div className="mt-4 flex space-x-3 md:mt-0 md:ml-4">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleExportReport}>
             Export Report
           </Button>
-          <Button variant="primary" size="sm">
+          <Button variant="primary" size="sm" onClick={handleAddPublication}>
             Add Publication
           </Button>
         </div>
@@ -178,7 +243,7 @@ const Research = () => {
         <Card.Header>
           <div className="flex items-center justify-between">
             <Card.Title>Recent Publications</Card.Title>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" onClick={handleViewAllPublications}>
               View All
             </Button>
           </div>
@@ -235,7 +300,7 @@ const Research = () => {
         <Card.Header>
           <div className="flex items-center justify-between">
             <Card.Title>Research Grants</Card.Title>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" onClick={handleViewAllGrants}>
               View All
             </Button>
           </div>
@@ -357,6 +422,13 @@ const Research = () => {
           </Card.Content>
         </Card>
       </div>
+
+      {/* Add Research Form Modal */}
+      <AddResearchForm
+        isOpen={showAddForm}
+        onClose={() => setShowAddForm(false)}
+        onSuccess={handleAddSuccess}
+      />
     </div>
   );
 };

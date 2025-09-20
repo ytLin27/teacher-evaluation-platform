@@ -1,7 +1,53 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, Table, Badge, Button } from '../components/ui';
+import AddServiceForm from '../components/forms/AddServiceForm';
+import { useToast } from '../contexts/ToastContext';
 
 const Service = () => {
+  // State for managing add form modal
+  const [showAddForm, setShowAddForm] = useState(false);
+
+  // Toast hook
+  const { showSuccess, showError } = useToast();
+
+  // Event handlers for buttons
+  const handleExportReport = async () => {
+    console.log('Export Report clicked');
+    try {
+      // 导出服务数据为CSV格式
+      const response = await fetch('http://localhost:3001/api/exports/service/1?format=csv');
+
+      if (response.ok) {
+        // 创建下载链接
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `service_report_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        showSuccess('Service report exported successfully!');
+      } else {
+        showError('Failed to export service report. Please try again.');
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      showError('Export failed due to network error. Please check your connection.');
+    }
+  };
+
+  const handleAddService = () => {
+    console.log('Add Service clicked');
+    setShowAddForm(true);
+  };
+
+  const handleAddSuccess = (newItem) => {
+    console.log('New service item added:', newItem);
+  };
+
   // Mock service data
   const serviceCommitments = [
     {
@@ -130,10 +176,10 @@ const Service = () => {
           </p>
         </div>
         <div className="mt-4 flex space-x-3 md:mt-0 md:ml-4">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleExportReport}>
             Export Report
           </Button>
-          <Button variant="primary" size="sm">
+          <Button variant="primary" size="sm" onClick={handleAddService}>
             Add Service
           </Button>
         </div>
@@ -372,6 +418,13 @@ const Service = () => {
           </div>
         </Card.Content>
       </Card>
+
+      {/* Add Service Form Modal */}
+      <AddServiceForm
+        isOpen={showAddForm}
+        onClose={() => setShowAddForm(false)}
+        onSuccess={handleAddSuccess}
+      />
     </div>
   );
 };

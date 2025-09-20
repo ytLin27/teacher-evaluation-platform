@@ -2,6 +2,40 @@ import React from 'react';
 import { Card, Badge, Button } from '../components/ui';
 
 const Career = () => {
+  // Event handlers for buttons
+  const handleDownloadResume = async () => {
+    console.log('Download Resume clicked');
+    try {
+      // 导出职业历程数据为CSV格式
+      const response = await fetch('http://localhost:3001/api/exports/career/1?format=csv');
+
+      if (response.ok) {
+        // 创建下载链接
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `career_history_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        alert('Career history exported successfully!');
+      } else {
+        alert('Failed to export career data. Please try again.');
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Export failed due to network error. Please check your connection.');
+    }
+  };
+
+  const handleUpdateProfile = () => {
+    console.log('Update Profile clicked');
+    alert('Update Profile functionality will be implemented soon!');
+  };
+
   // Mock career data
   const careerTimeline = [
     {
@@ -168,10 +202,10 @@ const Career = () => {
           </p>
         </div>
         <div className="mt-4 flex space-x-3 md:mt-0 md:ml-4">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleDownloadResume}>
             Download Resume
           </Button>
-          <Button variant="primary" size="sm">
+          <Button variant="primary" size="sm" onClick={handleUpdateProfile}>
             Update Profile
           </Button>
         </div>

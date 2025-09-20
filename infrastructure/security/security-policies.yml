@@ -1,0 +1,439 @@
+# 安全策略配置
+# 教师评价平台安全基线和审计功能配置
+
+# 网络安全策略
+network_security:
+  # 防火墙规则
+  firewall_rules:
+    # 允许的入站端口
+    allowed_inbound:
+      - port: 80
+        protocol: tcp
+        source: any
+        description: "HTTP traffic to API Gateway"
+      - port: 443
+        protocol: tcp
+        source: any
+        description: "HTTPS traffic to API Gateway"
+      - port: 22
+        protocol: tcp
+        source: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+        description: "SSH access from private networks only"
+
+    # 拒绝的入站端口
+    denied_inbound:
+      - port: 3306
+        protocol: tcp
+        description: "Block direct MySQL access"
+      - port: 5432
+        protocol: tcp
+        source: external
+        description: "Block external PostgreSQL access"
+      - port: 27017
+        protocol: tcp
+        source: external
+        description: "Block external MongoDB access"
+
+  # 内部服务通信规则
+  internal_communication:
+    - from: gateway
+      to: ["auth-service", "evaluation-service", "reporting-service", "document-service", "data-integration", "faux-schoolday"]
+      ports: [3001, 3002, 3003, 3004, 3005, 3006]
+      protocol: tcp
+
+    - from: ["auth-service", "evaluation-service", "reporting-service", "document-service", "data-integration"]
+      to: ["postgres", "mongodb", "influxdb", "redis"]
+      ports: [5432, 27017, 8086, 6379]
+      protocol: tcp
+
+    - from: all_services
+      to: keycloak
+      ports: [8080]
+      protocol: tcp
+
+# 身份认证和授权安全
+authentication_security:
+  # 密码策略
+  password_policy:
+    min_length: 12
+    require_uppercase: true
+    require_lowercase: true
+    require_numbers: true
+    require_special_chars: true
+    max_age_days: 90
+    password_history: 12
+    lockout_threshold: 5
+    lockout_duration_minutes: 30
+
+  # JWT配置
+  jwt_security:
+    algorithm: "RS256"
+    issuer: "http://localhost:8081/realms/teacher-evaluation"
+    audience: ["teacher-eval-frontend", "teacher-eval-api"]
+    token_lifetime_minutes: 60
+    refresh_token_lifetime_days: 30
+    require_audience_validation: true
+    require_issuer_validation: true
+    require_expiration_validation: true
+
+  # 会话管理
+  session_security:
+    session_timeout_minutes: 30
+    absolute_timeout_hours: 8
+    secure_cookies: true
+    httponly_cookies: true
+    samesite_policy: "Strict"
+    session_regeneration_on_login: true
+
+  # 多因素认证
+  mfa_policy:
+    enabled: true
+    required_for_roles: ["admin", "department_head"]
+    backup_codes_count: 10
+    totp_issuer: "Teacher Evaluation Platform"
+    totp_period: 30
+    totp_digits: 6
+
+# 数据保护和加密
+data_protection:
+  # 静态数据加密
+  encryption_at_rest:
+    postgres:
+      enabled: true
+      algorithm: "AES-256-GCM"
+      key_rotation_days: 90
+    mongodb:
+      enabled: true
+      algorithm: "AES-256-GCM"
+      key_rotation_days: 90
+    influxdb:
+      enabled: true
+      algorithm: "AES-256-GCM"
+    file_storage:
+      enabled: true
+      algorithm: "AES-256-GCM"
+
+  # 传输中数据加密
+  encryption_in_transit:
+    tls_version: "1.2"
+    cipher_suites:
+      - "ECDHE-RSA-AES256-GCM-SHA384"
+      - "ECDHE-RSA-AES128-GCM-SHA256"
+      - "ECDHE-RSA-AES256-SHA384"
+    certificate_validation: true
+    hsts_enabled: true
+    hsts_max_age: 31536000
+
+  # 敏感数据保护
+  sensitive_data:
+    pii_encryption: true
+    pii_fields: ["email", "phone", "social_security", "address"]
+    data_masking_enabled: true
+    anonymization_threshold_days: 2555  # 7 years
+
+  # 数据备份安全
+  backup_security:
+    encryption_enabled: true
+    compression_enabled: true
+    offsite_storage: true
+    retention_days: 2555  # 7 years for educational records
+    integrity_verification: true
+
+# 访问控制和权限管理
+access_control:
+  # 基于角色的访问控制 (RBAC)
+  rbac:
+    roles:
+      admin:
+        permissions:
+          - "read:all"
+          - "write:all"
+          - "delete:all"
+          - "manage:users"
+          - "manage:system"
+          - "audit:view"
+        resource_restrictions: []
+
+      department_head:
+        permissions:
+          - "read:department"
+          - "write:department"
+          - "manage:teachers"
+          - "generate:reports"
+          - "view:analytics"
+        resource_restrictions:
+          - department_scope: true
+
+      teacher:
+        permissions:
+          - "read:own"
+          - "write:own"
+          - "view:courses"
+          - "update:profile"
+        resource_restrictions:
+          - self_data_only: true
+
+      evaluator:
+        permissions:
+          - "submit:evaluations"
+          - "view:evaluation_forms"
+          - "read:assigned_teachers"
+        resource_restrictions:
+          - assigned_teachers_only: true
+
+  # 属性基于访问控制 (ABAC)
+  abac:
+    enabled: true
+    policies:
+      - name: "department_data_access"
+        rule: "user.department == resource.department OR user.role == 'admin'"
+        resources: ["teacher_data", "evaluation_data", "course_data"]
+
+      - name: "time_based_access"
+        rule: "current_time >= 06:00 AND current_time <= 22:00"
+        resources: ["all"]
+        exceptions: ["admin", "on_call_staff"]
+
+      - name: "location_based_access"
+        rule: "user.location IN ['campus_network', 'vpn', 'approved_remote']"
+        resources: ["sensitive_data"]
+
+  # 最小权限原则
+  principle_of_least_privilege:
+    enabled: true
+    regular_review_interval_days: 90
+    automatic_privilege_expiration: true
+    privilege_escalation_approval_required: true
+
+# 审计和日志记录
+audit_logging:
+  # 审计事件类型
+  audit_events:
+    authentication:
+      - user_login
+      - user_logout
+      - login_failure
+      - password_change
+      - mfa_setup
+      - mfa_verification
+
+    authorization:
+      - permission_granted
+      - permission_denied
+      - role_assignment
+      - role_removal
+      - privilege_escalation
+
+    data_access:
+      - sensitive_data_access
+      - bulk_data_export
+      - evaluation_data_view
+      - teacher_profile_access
+      - report_generation
+
+    data_modification:
+      - evaluation_submission
+      - teacher_data_update
+      - system_configuration_change
+      - user_management_action
+
+    system_events:
+      - service_start
+      - service_stop
+      - configuration_change
+      - security_policy_update
+      - backup_operation
+
+  # 日志配置
+  log_configuration:
+    format: "JSON"
+    level: "INFO"
+    retention_days: 2555  # 7 years
+    encryption: true
+    integrity_protection: true
+    real_time_forwarding: true
+
+  # 日志字段标准
+  log_fields:
+    required_fields:
+      - timestamp
+      - event_type
+      - user_id
+      - session_id
+      - source_ip
+      - user_agent
+      - resource_accessed
+      - action_performed
+      - result_status
+
+    optional_fields:
+      - request_id
+      - correlation_id
+      - risk_score
+      - geolocation
+      - device_fingerprint
+
+  # 日志存储和转发
+  log_storage:
+    primary_storage: "InfluxDB"
+    backup_storage: "File System"
+    siem_integration: true
+    real_time_alerting: true
+
+# 安全监控和告警
+security_monitoring:
+  # 威胁检测规则
+  threat_detection:
+    brute_force_detection:
+      threshold: 5
+      window_minutes: 15
+      action: "block_ip"
+
+    unusual_access_patterns:
+      enabled: true
+      baseline_learning_days: 30
+      anomaly_threshold: 2.5  # standard deviations
+
+    privilege_escalation_detection:
+      enabled: true
+      alert_on_role_change: true
+      alert_on_permission_expansion: true
+
+    data_exfiltration_detection:
+      large_download_threshold_mb: 100
+      bulk_export_alert: true
+      unusual_data_access_pattern: true
+
+  # 实时告警
+  real_time_alerts:
+    channels:
+      - email
+      - slack
+      - siem
+      - dashboard
+
+    severity_levels:
+      critical:
+        - authentication_bypass_attempt
+        - data_breach_detected
+        - system_compromise_indicator
+        - unauthorized_admin_access
+
+      high:
+        - multiple_login_failures
+        - privilege_escalation_attempt
+        - unusual_data_access
+        - security_policy_violation
+
+      medium:
+        - failed_authentication
+        - suspicious_user_behavior
+        - configuration_change
+        - backup_failure
+
+      low:
+        - normal_user_login
+        - routine_data_access
+        - scheduled_maintenance
+        - system_health_check
+
+# 漏洞管理
+vulnerability_management:
+  # 扫描配置
+  vulnerability_scanning:
+    frequency: "weekly"
+    automated_scanning: true
+    scan_types:
+      - infrastructure_scan
+      - application_scan
+      - dependency_scan
+      - configuration_scan
+
+  # 补丁管理
+  patch_management:
+    auto_patch_critical: true
+    auto_patch_window: "02:00-04:00"
+    test_environment_validation: true
+    rollback_capability: true
+
+  # 安全评估
+  security_assessment:
+    penetration_testing_frequency: "quarterly"
+    code_review_mandatory: true
+    security_training_required: true
+    compliance_audit_frequency: "annual"
+
+# 合规性要求
+compliance:
+  # 教育数据隐私法规
+  privacy_regulations:
+    ferpa_compliance: true
+    coppa_compliance: true
+    gdpr_applicable: false  # 本地demo不涉及欧盟用户
+    state_privacy_laws: true
+
+  # 数据保留政策
+  data_retention:
+    student_evaluation_data: "7_years"
+    teacher_performance_data: "7_years"
+    authentication_logs: "7_years"
+    audit_logs: "7_years"
+    temporary_data: "30_days"
+
+  # 数据销毁政策
+  data_destruction:
+    secure_deletion_method: "NIST_800-88"
+    verification_required: true
+    certificate_of_destruction: true
+
+# 事件响应计划
+incident_response:
+  # 响应团队
+  response_team:
+    security_officer: "admin@teacher-eval.local"
+    technical_lead: "tech@teacher-eval.local"
+    legal_counsel: "legal@teacher-eval.local"
+    communications: "comms@teacher-eval.local"
+
+  # 响应程序
+  response_procedures:
+    detection_to_containment_target: "1_hour"
+    containment_to_eradication_target: "4_hours"
+    recovery_time_objective: "8_hours"
+    recovery_point_objective: "1_hour"
+
+  # 通知要求
+  notification_requirements:
+    internal_notification: "immediate"
+    user_notification: "24_hours"
+    regulatory_notification: "72_hours"
+    public_disclosure: "as_required_by_law"
+
+# 安全培训和意识
+security_training:
+  # 培训要求
+  training_requirements:
+    all_users:
+      - security_awareness_basics
+      - password_security
+      - phishing_awareness
+      - data_protection_overview
+
+    administrators:
+      - advanced_security_practices
+      - incident_response_procedures
+      - compliance_requirements
+      - threat_hunting_basics
+
+    developers:
+      - secure_coding_practices
+      - vulnerability_assessment
+      - security_testing
+      - privacy_by_design
+
+  # 培训频率
+  training_frequency:
+    initial_training: "within_30_days"
+    annual_refresher: "required"
+    role_specific_training: "quarterly"
+    incident_based_training: "as_needed"

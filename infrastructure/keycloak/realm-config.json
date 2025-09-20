@@ -1,0 +1,424 @@
+{
+  "realm": "teacher-evaluation",
+  "displayName": "Teacher Evaluation Platform",
+  "displayNameHtml": "<div class=\"kc-logo-text\"><span>Teacher Evaluation Platform</span></div>",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "registrationEmailAsUsername": true,
+  "rememberMe": true,
+  "verifyEmail": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 30,
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "System Administrator - Full access to all features",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "teacher-evaluation"
+      },
+      {
+        "name": "department_head",
+        "description": "Department Head - Manage teachers in department",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "teacher-evaluation"
+      },
+      {
+        "name": "teacher",
+        "description": "Teacher - View own data and update profile",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "teacher-evaluation"
+      },
+      {
+        "name": "evaluator",
+        "description": "Evaluator - Submit and manage evaluations",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "teacher-evaluation"
+      }
+    ]
+  },
+  "groups": [
+    {
+      "name": "Computer Science",
+      "path": "/Computer Science",
+      "attributes": {
+        "department": ["Computer Science"]
+      },
+      "realmRoles": ["teacher"],
+      "subGroups": []
+    },
+    {
+      "name": "Mathematics",
+      "path": "/Mathematics",
+      "attributes": {
+        "department": ["Mathematics"]
+      },
+      "realmRoles": ["teacher"],
+      "subGroups": []
+    },
+    {
+      "name": "Business Administration",
+      "path": "/Business Administration",
+      "attributes": {
+        "department": ["Business Administration"]
+      },
+      "realmRoles": ["teacher"],
+      "subGroups": []
+    },
+    {
+      "name": "Administrators",
+      "path": "/Administrators",
+      "attributes": {
+        "role_type": ["administrative"]
+      },
+      "realmRoles": ["admin"],
+      "subGroups": []
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@university.edu",
+      "firstName": "System",
+      "lastName": "Administrator",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["admin"],
+      "groups": ["/Administrators"],
+      "attributes": {
+        "employee_id": ["ADMIN001"],
+        "department": ["IT"],
+        "position": ["System Administrator"]
+      }
+    },
+    {
+      "username": "jane.doe",
+      "enabled": true,
+      "email": "jane.doe@university.edu",
+      "firstName": "Jane",
+      "lastName": "Doe",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["teacher"],
+      "groups": ["/Computer Science"],
+      "attributes": {
+        "employee_id": ["EMP001"],
+        "department": ["Computer Science"],
+        "position": ["Assistant Professor"],
+        "hire_date": ["2020-08-15"],
+        "teacher_id": ["1"]
+      }
+    },
+    {
+      "username": "john.smith",
+      "enabled": true,
+      "email": "john.smith@university.edu",
+      "firstName": "John",
+      "lastName": "Smith",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["teacher", "department_head"],
+      "groups": ["/Mathematics"],
+      "attributes": {
+        "employee_id": ["EMP002"],
+        "department": ["Mathematics"],
+        "position": ["Full Professor"],
+        "hire_date": ["2015-01-10"],
+        "teacher_id": ["2"]
+      }
+    },
+    {
+      "username": "dept.head",
+      "enabled": true,
+      "email": "dept.head@university.edu",
+      "firstName": "Robert",
+      "lastName": "Wilson",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["department_head"],
+      "groups": ["/Business Administration"],
+      "attributes": {
+        "employee_id": ["DEPT001"],
+        "department": ["Business Administration"],
+        "position": ["Department Head"],
+        "hire_date": ["2010-09-01"]
+      }
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "teacher-eval-frontend",
+      "name": "Teacher Evaluation Frontend",
+      "description": "React frontend application",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "frontend-client-secret",
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "http://localhost:8080/*",
+        "https://teacher-eval.local/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173",
+        "http://localhost:8080",
+        "https://teacher-eval.local"
+      ],
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "teacher-id-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "teacher_id",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "teacher_id",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "department-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "department",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "department",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "position-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "position",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "position",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "employee-id-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "employee_id",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "employee_id",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "teacher-eval-api",
+      "name": "Teacher Evaluation API Services",
+      "description": "Backend API services",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "api-client-secret",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": true
+    },
+    {
+      "clientId": "schoolday-mock",
+      "name": "Schoolday Mock Integration",
+      "description": "Mock Schoolday service for testing",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "schoolday-mock-secret",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "redirectUris": [
+        "http://localhost:3006/callback"
+      ]
+    }
+  ],
+  "requiredActions": [
+    {
+      "alias": "VERIFY_EMAIL",
+      "name": "Verify Email",
+      "providerId": "VERIFY_EMAIL",
+      "enabled": false,
+      "defaultAction": false,
+      "priority": 50,
+      "config": {}
+    },
+    {
+      "alias": "UPDATE_PROFILE",
+      "name": "Update Profile",
+      "providerId": "UPDATE_PROFILE",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 40,
+      "config": {}
+    },
+    {
+      "alias": "CONFIGURE_TOTP",
+      "name": "Configure OTP",
+      "providerId": "CONFIGURE_TOTP",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 10,
+      "config": {}
+    },
+    {
+      "alias": "UPDATE_PASSWORD",
+      "name": "Update Password",
+      "providerId": "UPDATE_PASSWORD",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 30,
+      "config": {}
+    }
+  ],
+  "authenticationFlows": [
+    {
+      "alias": "browser-with-mfa",
+      "description": "Browser flow with optional MFA",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-cookie",
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "userSetupAllowed": false,
+          "autheticatorFlow": false
+        },
+        {
+          "authenticator": "auth-spnego",
+          "requirement": "DISABLED",
+          "priority": 20,
+          "userSetupAllowed": false,
+          "autheticatorFlow": false
+        },
+        {
+          "authenticator": "identity-provider-redirector",
+          "requirement": "ALTERNATIVE",
+          "priority": 25,
+          "userSetupAllowed": false,
+          "autheticatorFlow": false
+        },
+        {
+          "flowAlias": "forms",
+          "requirement": "ALTERNATIVE",
+          "priority": 30,
+          "userSetupAllowed": false,
+          "autheticatorFlow": true
+        }
+      ]
+    }
+  ],
+  "browserSecurityHeaders": {
+    "contentSecurityPolicyReportOnly": "",
+    "xContentTypeOptions": "nosniff",
+    "xRobotsTag": "none",
+    "xFrameOptions": "SAMEORIGIN",
+    "contentSecurityPolicy": "frame-src 'self'; frame-ancestors 'self'; object-src 'none';",
+    "xXSSProtection": "1; mode=block",
+    "strictTransportSecurity": "max-age=31536000; includeSubDomains"
+  },
+  "smtpServer": {},
+  "loginTheme": "keycloak",
+  "adminTheme": "keycloak",
+  "accountTheme": "keycloak",
+  "emailTheme": "keycloak",
+  "eventsEnabled": true,
+  "eventsListeners": ["jboss-logging"],
+  "enabledEventTypes": [
+    "LOGIN", "LOGIN_ERROR", "LOGOUT", "LOGOUT_ERROR",
+    "REGISTER", "REGISTER_ERROR", "UPDATE_PROFILE", "UPDATE_PROFILE_ERROR",
+    "UPDATE_PASSWORD", "UPDATE_PASSWORD_ERROR", "UPDATE_TOTP", "UPDATE_TOTP_ERROR",
+    "VERIFY_EMAIL", "VERIFY_EMAIL_ERROR", "CLIENT_LOGIN", "CLIENT_LOGIN_ERROR"
+  ],
+  "adminEventsEnabled": true,
+  "adminEventsDetailsEnabled": true,
+  "internationalizationEnabled": true,
+  "supportedLocales": ["en", "zh-CN"],
+  "defaultLocale": "en",
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyInitialCounter": 0,
+  "otpPolicyDigits": 6,
+  "otpPolicyLookAheadWindow": 1,
+  "otpPolicyPeriod": 30,
+  "passwordPolicy": "length(8) and digits(1) and lowerCase(1) and upperCase(1)",
+  "webAuthnPolicyRpEntityName": "Teacher Evaluation Platform",
+  "webAuthnPolicySignatureAlgorithms": ["ES256", "RS256"],
+  "webAuthnPolicyRpId": "",
+  "webAuthnPolicyAttestationConveyancePreference": "not specified",
+  "webAuthnPolicyAuthenticatorAttachment": "not specified",
+  "webAuthnPolicyRequireResidentKey": "not specified",
+  "webAuthnPolicyUserVerificationRequirement": "not specified",
+  "webAuthnPolicyCreateTimeout": 0,
+  "webAuthnPolicyAvoidSameAuthenticatorRegister": false
+}
