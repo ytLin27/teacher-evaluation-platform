@@ -8,5 +8,8 @@ export { default as Progress } from './Progress';
 export { default as Modal } from './Modal';
 export { default as RadarChart } from './RadarChart';
 export { default as LineChart } from './LineChart';
+export { default as BoxPlotChart } from './BoxPlotChart';
 export { default as SearchBar } from './SearchBar';
 export { default as Toast } from './Toast';
+export { default as Tabs } from './Tabs';
+export { default as Pagination } from './Pagination';

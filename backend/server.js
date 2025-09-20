@@ -39,6 +39,7 @@ app.use('/api/teachers', require('./routes/teachers'));
 app.use('/api/evaluations', require('./routes/evaluations'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/exports', require('./routes/exports'));
+app.use('/api/documents', require('./routes/documents'));
 
 // 健康检查端点
 app.get('/health', (req, res) => {

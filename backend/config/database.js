@@ -137,6 +137,21 @@ class Database {
       )
     `);
 
+    // 创建文档表
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS documents (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        teacher_id INTEGER,
+        name TEXT NOT NULL,
+        file_path TEXT NOT NULL,
+        file_size INTEGER,
+        mime_type TEXT,
+        tags TEXT, -- 以逗号分隔的标签字符串
+        uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (teacher_id) REFERENCES teachers (id)
+      )
+    `);
+
     console.log('✅ 数据库表结构初始化完成');
     console.log('💡 使用 POST /api/init-data 端点来初始化示例数据');
   }
