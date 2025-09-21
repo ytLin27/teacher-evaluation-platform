@@ -1,10 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, Table, Badge, Button, Progress } from '../components/ui';
+import AddCertificationForm from '../components/forms/AddCertificationForm';
+import { useToast } from '../contexts/ToastContext';
 
 const Professional = () => {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const { showSuccess, showError } = useToast();
+
   // Event handlers for buttons
   const handleDownloadCV = async () => {
     console.log('Download CV clicked');
+    setIsDownloading(true);
+
     try {
       // 导出专业发展数据为CSV格式
       const response = await fetch('http://localhost:3001/api/exports/professional/1?format=csv');
@@ -21,19 +29,28 @@ const Professional = () => {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
 
-        alert('Professional development data exported successfully!');
+        showSuccess('CV 已下载');
       } else {
-        alert('Failed to export professional data. Please try again.');
+        showError(`Failed to download CV (${response.status}). Please try again.`);
       }
     } catch (error) {
-      console.error('Export error:', error);
-      alert('Export failed due to network error. Please check your connection.');
+      console.error('Download error:', error);
+      showError(`Download failed: ${error.message}. Please check your connection and retry.`);
+    } finally {
+      setIsDownloading(false);
     }
   };
 
   const handleAddCertification = () => {
     console.log('Add Certification clicked');
-    alert('Add Certification functionality will be implemented soon!');
+    setShowAddForm(true);
+  };
+
+  const handleAddSuccess = (newCertification) => {
+    console.log('New certification added:', newCertification);
+    showSuccess('已新增认证');
+    // Here you would normally refresh the certifications list
+    // For now, we'll just show the success message
   };
 
   // Mock professional development data
@@ -232,8 +249,15 @@ const Professional = () => {
           </p>
         </div>
         <div className="mt-4 flex space-x-3 md:mt-0 md:ml-4">
-          <Button variant="outline" size="sm" onClick={handleDownloadCV}>
-            Download CV
+          <Button variant="outline" size="sm" onClick={handleDownloadCV} disabled={isDownloading}>
+            {isDownloading ? (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
+                Downloading...
+              </div>
+            ) : (
+              'Download CV'
+            )}
           </Button>
           <Button variant="primary" size="sm" onClick={handleAddCertification}>
             Add Certification
@@ -437,6 +461,13 @@ const Professional = () => {
           </div>
         </Card.Content>
       </Card>
+
+      {/* Add Certification Form Modal */}
+      <AddCertificationForm
+        isOpen={showAddForm}
+        onClose={() => setShowAddForm(false)}
+        onSuccess={handleAddSuccess}
+      />
     </div>
   );
 };

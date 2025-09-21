@@ -42,6 +42,7 @@ app.use('/api/exports', require('./routes/exports'));
 app.use('/api/documents', require('./routes/documents'));
 app.use('/api/publications', require('./routes/publications'));
 app.use('/api/services', require('./routes/services'));
+app.use('/api/certifications', require('./routes/certifications'));
 
 // 健康检查端点
 app.get('/health', (req, res) => {
