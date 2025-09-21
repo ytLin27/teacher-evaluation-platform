@@ -3,7 +3,8 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 
 const Layout = ({ children, title }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar state
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // Desktop sidebar state
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -13,24 +14,79 @@ const Layout = ({ children, title }) => {
     setSidebarOpen(false);
   };
 
+  const toggleSidebarCollapse = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+  };
+
   return (
-    <div className="h-screen flex overflow-hidden bg-gray-50">
-      {/* Sidebar */}
-      <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
+    <div className="h-screen overflow-hidden overflow-x-hidden bg-gray-50">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
+          onClick={closeSidebar}
+        />
+      )}
 
-      {/* Main content */}
-      <div className="flex flex-col flex-1 overflow-hidden lg:ml-0">
-        {/* Header */}
-        <Header onMenuClick={toggleSidebar} title={title} />
+      {/* Desktop Grid Layout */}
+      <div className={`hidden lg:grid h-full transition-all duration-300 ease-in-out ${
+        sidebarCollapsed
+          ? 'grid-cols-[64px_1fr]'
+          : 'grid-cols-[256px_1fr]'
+      }`}>
+        {/* Sidebar */}
+        <Sidebar
+          isOpen={sidebarOpen}
+          onClose={closeSidebar}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={toggleSidebarCollapse}
+        />
 
-        {/* Page content */}
-        <main className="flex-1 relative overflow-y-auto focus:outline-none">
-          <div className="py-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              {children}
+        {/* Main content */}
+        <div className="flex flex-col overflow-hidden pl-3 lg:pl-4">
+          {/* Header */}
+          <Header
+            onMenuClick={toggleSidebar}
+            onToggleCollapse={toggleSidebarCollapse}
+            title={title}
+          />
+
+          {/* Page content */}
+          <main className="flex-1 relative overflow-y-auto focus:outline-none">
+            <div className="py-4">
+              <div className="px-4">
+                {children}
+              </div>
             </div>
-          </div>
-        </main>
+          </main>
+        </div>
+      </div>
+
+      {/* Mobile Layout */}
+      <div className="lg:hidden flex flex-col h-full">
+        <Sidebar
+          isOpen={sidebarOpen}
+          onClose={closeSidebar}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={toggleSidebarCollapse}
+        />
+
+        {/* Main content for mobile */}
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <Header
+            onMenuClick={toggleSidebar}
+            onToggleCollapse={toggleSidebarCollapse}
+            title={title}
+          />
+
+          <main className="flex-1 relative overflow-y-auto focus:outline-none">
+            <div className="py-4">
+              <div className="px-4">
+                {children}
+              </div>
+            </div>
+          </main>
+        </div>
       </div>
     </div>
   );

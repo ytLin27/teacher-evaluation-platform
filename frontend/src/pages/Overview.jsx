@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Progress, Badge, RadarChart, LineChart, BoxPlotChart, Tabs } from '../components/ui';
+import { useNavigate } from 'react-router-dom';
+import { Card, Progress, Badge, RadarChart, LineChart, BarChart, BoxPlotChart, Tabs } from '../components/ui';
 
 const Overview = () => {
+  const navigate = useNavigate();
   const [teacherData, setTeacherData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sortBy, setSortBy] = useState('current'); // 'current', 'semester', 'annual'
+  const [sortOrder, setSortOrder] = useState('desc'); // 'asc', 'desc'
 
   // Fetch teacher data from API
   useEffect(() => {
@@ -28,7 +32,7 @@ const Overview = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="w-full space-y-6">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-300 rounded w-1/3 mb-4"></div>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -43,7 +47,7 @@ const Overview = () => {
 
   if (error) {
     return (
-      <div className="space-y-6">
+      <div className="w-full space-y-6">
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           <strong className="font-bold">Error: </strong>
           <span className="block sm:inline">{error}</span>
@@ -54,7 +58,7 @@ const Overview = () => {
 
   const metrics = teacherData?.evaluation || {
     overall_score: 4.3,
-    teaching_effectiveness: 4.5,
+    teaching_effectiveness: 4.7,
     research_output: 4.1,
     service_contribution: 4.0,
     grant_funding: 3.8
@@ -73,10 +77,10 @@ const Overview = () => {
       {
         label: 'Performance Score',
         data: [
-          metrics.teaching_effectiveness || 4.5,
-          metrics.research_output || 4.1,
-          metrics.service_contribution || 4.0,
-          metrics.grant_funding || 3.8,
+          Math.min(metrics.teaching_effectiveness || 4.7, 5.0),
+          Math.min(metrics.research_output || 4.1, 5.0),
+          Math.min(metrics.service_contribution || 4.0, 5.0),
+          Math.min(metrics.grant_funding || 3.8, 5.0),
           4.2 // Professional development placeholder
         ],
         backgroundColor: 'rgba(99, 102, 241, 0.2)',
@@ -104,8 +108,112 @@ const Overview = () => {
     { type: 'service', title: 'Committee meeting attended', date: '2024-01-03', hours: 3 }
   ];
 
+  // Handle metric card clicks
+  const handleMetricClick = (route) => {
+    navigate(route);
+  };
+
+  // Handle sorting
+  const handleSortChange = (newSortBy) => {
+    if (sortBy === newSortBy) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(newSortBy);
+      setSortOrder('desc');
+    }
+  };
+
+  // Get sorted data based on current sorting settings
+  const getSortedData = () => {
+    // In a real application, this would sort actual data
+    // For now, we'll just simulate different sorting states
+    let sortedMetrics = { ...metrics };
+
+    switch (sortBy) {
+      case 'semester':
+        // Simulate semester-based sorting
+        sortedMetrics = {
+          ...metrics,
+          overall_score: sortOrder === 'desc' ? metrics.overall_score : metrics.overall_score * 0.95,
+          teaching_effectiveness: sortOrder === 'desc' ? metrics.teaching_effectiveness : metrics.teaching_effectiveness * 0.95,
+        };
+        break;
+      case 'annual':
+        // Simulate annual-based sorting
+        sortedMetrics = {
+          ...metrics,
+          overall_score: sortOrder === 'desc' ? metrics.overall_score * 1.05 : metrics.overall_score * 0.9,
+          research_output: sortOrder === 'desc' ? metrics.research_output * 1.1 : metrics.research_output * 0.85,
+        };
+        break;
+      default:
+        // Current period (no change)
+        break;
+    }
+
+    return sortedMetrics;
+  };
+
+  const sortedMetrics = getSortedData();
+
+  // Metric cards configuration
+  const metricCards = [
+    {
+      title: 'Overall Score',
+      value: Math.min(sortedMetrics.overall_score, 5.0),
+      route: '/',
+      gradient: 'from-purple-500 to-indigo-600',
+      icon: (
+        <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      ),
+      textColor: 'text-white',
+      isMain: true
+    },
+    {
+      title: 'Teaching Score',
+      value: Math.min(sortedMetrics.teaching_effectiveness, 5.0),
+      route: '/teaching',
+      gradient: 'from-emerald-500 to-teal-600',
+      icon: (
+        <svg className="h-8 w-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      ),
+      textColor: 'text-gray-900',
+      isMain: false
+    },
+    {
+      title: 'Research Output',
+      value: Math.min(sortedMetrics.research_output, 5.0),
+      route: '/research',
+      gradient: 'from-violet-500 to-purple-600',
+      icon: (
+        <svg className="h-8 w-8 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+        </svg>
+      ),
+      textColor: 'text-gray-900',
+      isMain: false
+    },
+    {
+      title: 'Service Score',
+      value: Math.min(sortedMetrics.service_contribution, 5.0),
+      route: '/service',
+      gradient: 'from-blue-500 to-cyan-600',
+      icon: (
+        <svg className="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      ),
+      textColor: 'text-gray-900',
+      isMain: false
+    }
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="w-full space-y-6">
       {/* Header */}
       <div className="md:flex md:items-center md:justify-between">
         <div className="flex-1 min-w-0">
@@ -116,84 +224,125 @@ const Overview = () => {
             Comprehensive view of teaching, research, and service metrics
           </p>
         </div>
-        <div className="mt-4 flex md:mt-0 md:ml-4">
+        <div className="mt-4 flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 md:mt-0 md:ml-4">
+          {/* Sort Controls */}
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600 font-medium">Sort by:</span>
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => handleSortChange('current')}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                  sortBy === 'current'
+                    ? 'bg-white text-purple-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Current
+                {sortBy === 'current' && (
+                  <svg className={`inline ml-1 w-3 h-3 transition-transform ${
+                    sortOrder === 'desc' ? 'rotate-180' : ''
+                  }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                  </svg>
+                )}
+              </button>
+              <button
+                onClick={() => handleSortChange('semester')}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                  sortBy === 'semester'
+                    ? 'bg-white text-purple-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Semester
+                {sortBy === 'semester' && (
+                  <svg className={`inline ml-1 w-3 h-3 transition-transform ${
+                    sortOrder === 'desc' ? 'rotate-180' : ''
+                  }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                  </svg>
+                )}
+              </button>
+              <button
+                onClick={() => handleSortChange('annual')}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                  sortBy === 'annual'
+                    ? 'bg-white text-purple-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Annual
+                {sortBy === 'annual' && (
+                  <svg className={`inline ml-1 w-3 h-3 transition-transform ${
+                    sortOrder === 'desc' ? 'rotate-180' : ''
+                  }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+
           <span className="text-sm text-gray-500">Last updated: January 15, 2024</span>
         </div>
       </div>
 
       {/* Key Metrics Cards */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
+      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+        {metricCards.map((card, index) => (
+          <Card
+            key={index}
+            className={`cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-xl min-w-[220px] ${
+              card.isMain
+                ? `bg-gradient-to-r ${card.gradient} text-white`
+                : `bg-gradient-to-br ${card.gradient} hover:from-white hover:to-gray-50 border border-transparent hover:border-gray-200`
+            }`}
+            onClick={() => handleMetricClick(card.route)}
+          >
+            <div className="flex items-center p-6">
+              <div className="flex-shrink-0">
+                <div className={`p-2 rounded-lg ${
+                  card.isMain
+                    ? 'bg-white bg-opacity-20'
+                    : 'bg-white shadow-sm'
+                }`}>
+                  {card.icon}
+                </div>
+              </div>
+              <div className="ml-5 flex-1 min-w-0">
+                <dl>
+                  <dt className={`text-sm font-medium ${
+                    card.isMain
+                      ? 'text-white text-opacity-90'
+                      : 'text-gray-600'
+                  }`}>
+                    {card.title}
+                  </dt>
+                  <dd className={`text-xl font-bold whitespace-nowrap ${
+                    card.isMain ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    {Number(card.value).toFixed(1)}/5.0
+                  </dd>
+                </dl>
+              </div>
+              <div className="flex-shrink-0 ml-3">
+                <svg className={`w-5 h-5 ${
+                  card.isMain ? 'text-white text-opacity-70' : 'text-gray-400'
+                }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
             </div>
-            <div className="ml-5 w-0 flex-1">
-              <dl>
-                <dt className="text-sm font-medium text-purple-100 truncate">Overall Score</dt>
-                <dd className="text-lg font-semibold text-white">{metrics.overall_score}/5.0</dd>
-              </dl>
-            </div>
-          </div>
-        </Card>
-
-        <Card hover>
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <svg className="h-8 w-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
-            </div>
-            <div className="ml-5 w-0 flex-1">
-              <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate">Teaching Score</dt>
-                <dd className="text-lg font-semibold text-gray-900">{metrics.teaching_effectiveness}/5.0</dd>
-              </dl>
-            </div>
-          </div>
-        </Card>
-
-        <Card hover>
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <svg className="h-8 w-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
-            </div>
-            <div className="ml-5 w-0 flex-1">
-              <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate">Research Output</dt>
-                <dd className="text-lg font-semibold text-gray-900">{metrics.research_output}/5.0</dd>
-              </dl>
-            </div>
-          </div>
-        </Card>
-
-        <Card hover>
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <svg className="h-8 w-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-            <div className="ml-5 w-0 flex-1">
-              <dl>
-                <dt className="text-sm font-medium text-gray-500 truncate">Service Score</dt>
-                <dd className="text-lg font-semibold text-gray-900">{metrics.service_contribution}/5.0</dd>
-              </dl>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        ))}
       </div>
 
       {/* Main Content with Tabs */}
       <Tabs defaultTab="overview" className="space-y-6">
         <Tabs.TabPane tabId="overview" label="Overview">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
             {/* Performance Radar Chart */}
-            <div className="lg:col-span-2">
+            <div className="xl:col-span-2">
               <Card>
                 <Card.Header>
                   <Card.Title>Performance Overview</Card.Title>
@@ -213,7 +362,7 @@ const Overview = () => {
                         <div>
                           <div className="flex justify-between text-sm font-medium text-gray-900">
                             <span>Teaching Effectiveness</span>
-                            <span>{metrics.teaching_effectiveness}/5.0</span>
+                            <span>{Number(metrics.teaching_effectiveness).toFixed(1)}/5.0</span>
                           </div>
                           <Progress
                             value={metrics.teaching_effectiveness}
@@ -226,7 +375,7 @@ const Overview = () => {
                         <div>
                           <div className="flex justify-between text-sm font-medium text-gray-900">
                             <span>Research Output</span>
-                            <span>{metrics.research_output}/5.0</span>
+                            <span>{Number(metrics.research_output).toFixed(1)}/5.0</span>
                           </div>
                           <Progress
                             value={metrics.research_output}
@@ -239,7 +388,7 @@ const Overview = () => {
                         <div>
                           <div className="flex justify-between text-sm font-medium text-gray-900">
                             <span>Service Contribution</span>
-                            <span>{metrics.service_contribution}/5.0</span>
+                            <span>{Number(metrics.service_contribution).toFixed(1)}/5.0</span>
                           </div>
                           <Progress
                             value={metrics.service_contribution}
@@ -252,7 +401,7 @@ const Overview = () => {
                         <div>
                           <div className="flex justify-between text-sm font-medium text-gray-900">
                             <span>Grant Funding</span>
-                            <span>{metrics.grant_funding}/5.0</span>
+                            <span>{Number(metrics.grant_funding).toFixed(1)}/5.0</span>
                           </div>
                           <Progress
                             value={metrics.grant_funding}
@@ -384,7 +533,7 @@ const TrendsContent = ({ metrics, stats }) => {
     datasets: [
       {
         label: 'Overall Performance',
-        data: [3.2, 3.6, 4.0, 4.2, metrics.overall_score || 4.3],
+        data: [3.2, 3.6, 4.0, 4.2, Number(metrics.overall_score || 4.3).toFixed(1)],
         borderColor: 'rgba(99, 102, 241, 1)',
         backgroundColor: 'rgba(99, 102, 241, 0.1)',
         borderWidth: 3,
@@ -393,7 +542,7 @@ const TrendsContent = ({ metrics, stats }) => {
       },
       {
         label: 'Teaching Score',
-        data: [3.5, 3.8, 4.1, 4.3, metrics.teaching_effectiveness || 4.5],
+        data: [3.5, 3.8, 4.1, 4.3, Number(metrics.teaching_effectiveness || 4.5).toFixed(1)],
         borderColor: 'rgba(34, 197, 94, 1)',
         backgroundColor: 'rgba(34, 197, 94, 0.1)',
         borderWidth: 2,
@@ -402,7 +551,7 @@ const TrendsContent = ({ metrics, stats }) => {
       },
       {
         label: 'Research Score',
-        data: [2.8, 3.2, 3.7, 4.0, metrics.research_output || 4.1],
+        data: [2.8, 3.2, 3.7, 4.0, Number(metrics.research_output || 4.1).toFixed(1)],
         borderColor: 'rgba(168, 85, 247, 1)',
         backgroundColor: 'rgba(168, 85, 247, 0.1)',
         borderWidth: 2,
@@ -415,21 +564,21 @@ const TrendsContent = ({ metrics, stats }) => {
   const growthMetrics = [
     {
       title: 'Teaching Growth',
-      current: metrics.teaching_effectiveness || 4.5,
+      current: Number(metrics.teaching_effectiveness || 4.5).toFixed(1),
       previous: 4.3,
       change: '+4.7%',
       trend: 'up'
     },
     {
       title: 'Research Growth',
-      current: metrics.research_output || 4.1,
+      current: Number(metrics.research_output || 4.1).toFixed(1),
       previous: 4.0,
       change: '+2.5%',
       trend: 'up'
     },
     {
       title: 'Service Growth',
-      current: metrics.service_contribution || 4.0,
+      current: Number(metrics.service_contribution || 4.0).toFixed(1),
       previous: 3.8,
       change: '+5.3%',
       trend: 'up'
@@ -437,10 +586,10 @@ const TrendsContent = ({ metrics, stats }) => {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <div className="w-full space-y-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         {/* Performance Trends Chart */}
-        <div className="lg:col-span-2">
+        <div className="xl:col-span-2">
           <Card>
             <Card.Header>
               <Card.Title>Performance Trends (5 Years)</Card.Title>
@@ -496,7 +645,7 @@ const TrendsContent = ({ metrics, stats }) => {
           <Card.Title>Trend Analysis & Insights</Card.Title>
         </Card.Header>
         <Card.Content>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             <div className="p-4 border border-green-200 bg-green-50 rounded-lg">
               <div className="flex items-center mb-2">
                 <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -541,124 +690,153 @@ const TrendsContent = ({ metrics, stats }) => {
 
 // Peer Comparison Content Component
 const PeerComparisonContent = ({ metrics }) => {
-  // Mock peer comparison data
-  const peerData = {
-    departments: [
-      { name: 'Computer Science', average: 4.2 },
-      { name: 'Mathematics', average: 4.0 },
-      { name: 'Physics', average: 3.9 },
-      { name: 'Chemistry', average: 4.1 },
-      { name: 'Biology', average: 3.8 }
-    ],
-    percentiles: [
-      { p25: 3.5, median: 4.0, p75: 4.5 },
-      { p25: 3.3, median: 3.8, p75: 4.3 },
-      { p25: 3.2, median: 3.7, p75: 4.2 },
-      { p25: 3.4, median: 3.9, p75: 4.4 },
-      { p25: 3.1, median: 3.6, p75: 4.1 }
-    ],
-    currentScore: metrics.overall_score || 4.3,
-    currentPosition: 0 // Position in Computer Science dept
+  // Dimension comparison data with percentiles
+  const dimensionData = {
+    labels: ['Overall Score', 'Teaching', 'Research', 'Service'],
+    datasets: [
+      {
+        label: 'Your Score',
+        data: [
+          Math.min(metrics.overall_score || 4.3, 5.0),
+          Math.min(metrics.teaching_effectiveness || 4.5, 5.0),
+          Math.min(metrics.research_output || 4.1, 5.0),
+          Math.min(metrics.service_contribution || 4.0, 5.0)
+        ],
+        backgroundColor: 'rgba(239, 68, 68, 0.8)',
+        borderColor: 'rgba(239, 68, 68, 1)',
+        borderWidth: 3,
+        pointRadius: 8,
+        pointHoverRadius: 10,
+        pointStyle: 'rectRounded'
+      },
+      {
+        label: '75th Percentile',
+        data: [4.5, 4.3, 4.2, 4.1],
+        backgroundColor: 'rgba(156, 163, 175, 0.3)',
+        borderColor: 'rgba(156, 163, 175, 1)',
+        borderWidth: 2,
+        pointRadius: 4,
+        borderDash: [5, 5]
+      },
+      {
+        label: 'Median (50th)',
+        data: [4.0, 3.8, 3.7, 3.6],
+        backgroundColor: 'rgba(34, 197, 94, 0.3)',
+        borderColor: 'rgba(34, 197, 94, 1)',
+        borderWidth: 2,
+        pointRadius: 5
+      },
+      {
+        label: '25th Percentile',
+        data: [3.5, 3.3, 3.2, 3.1],
+        backgroundColor: 'rgba(156, 163, 175, 0.3)',
+        borderColor: 'rgba(156, 163, 175, 1)',
+        borderWidth: 2,
+        pointRadius: 4,
+        borderDash: [5, 5]
+      }
+    ]
   };
 
   const rankingStats = [
     {
       metric: 'Overall Performance',
-      yourScore: metrics.overall_score || 4.3,
-      deptAverage: 4.2,
+      yourScore: Number(Math.min(metrics.overall_score || 4.3, 5.0)).toFixed(1),
+      deptAverage: Number(4.2).toFixed(1),
       rank: '8th',
       percentile: '78%',
       totalTeachers: 45
     },
     {
       metric: 'Teaching Effectiveness',
-      yourScore: metrics.teaching_effectiveness || 4.5,
-      deptAverage: 4.1,
+      yourScore: Number(Math.min(metrics.teaching_effectiveness || 4.5, 5.0)).toFixed(1),
+      deptAverage: Number(4.1).toFixed(1),
       rank: '5th',
       percentile: '85%',
       totalTeachers: 45
     },
     {
       metric: 'Research Output',
-      yourScore: metrics.research_output || 4.1,
-      deptAverage: 4.0,
+      yourScore: Number(Math.min(metrics.research_output || 4.1, 5.0)).toFixed(1),
+      deptAverage: Number(4.0).toFixed(1),
       rank: '12th',
       percentile: '73%',
+      totalTeachers: 45
+    },
+    {
+      metric: 'Service Contribution',
+      yourScore: Number(Math.min(metrics.service_contribution || 4.0, 5.0)).toFixed(1),
+      deptAverage: Number(3.9).toFixed(1),
+      rank: '15th',
+      percentile: '67%',
       totalTeachers: 45
     }
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Department Comparison Chart */}
-        <div className="lg:col-span-2">
-          <Card>
-            <Card.Header>
-              <Card.Title>Department Performance Comparison</Card.Title>
-            </Card.Header>
-            <Card.Content>
-              <BoxPlotChart
-                data={peerData}
-                title="Your Performance vs Department Averages"
-                height="400px"
-              />
-              <div className="mt-4 text-sm text-gray-600">
-                <p>
-                  <span className="inline-block w-3 h-3 bg-red-500 rounded-full mr-2"></span>
-                  Your Score: {peerData.currentScore}/5.0
-                </p>
-                <p className="mt-1">
-                  You rank in the <strong>78th percentile</strong> among Computer Science faculty
-                </p>
-              </div>
-            </Card.Content>
-          </Card>
-        </div>
+    <div className="w-full space-y-6">
+      {/* Dimension Comparison Chart - Full Width Top */}
+      <Card>
+        <Card.Header>
+          <Card.Title>Performance Dimension Comparison</Card.Title>
+        </Card.Header>
+        <Card.Content>
+          <LineChart
+            data={dimensionData}
+            height="400px"
+          />
+          <div className="mt-4 text-sm text-gray-600">
+            <p>
+              <span className="inline-block w-3 h-3 bg-red-500 rounded-full mr-2"></span>
+              Your performance across evaluation dimensions with percentile ranges
+            </p>
+            <p className="mt-1">
+              Red line shows your scores; gray dashed lines show 25th/75th percentiles; green line shows median
+            </p>
+          </div>
+        </Card.Content>
+      </Card>
 
-        {/* Ranking Statistics */}
-        <div>
-          <Card>
-            <Card.Header>
-              <Card.Title>Your Rankings</Card.Title>
-            </Card.Header>
-            <Card.Content>
-              <div className="space-y-4">
-                {rankingStats.map((stat, index) => (
-                  <div key={index} className="p-4 border border-gray-200 rounded-lg">
-                    <h4 className="font-medium text-gray-900 mb-2">{stat.metric}</h4>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-lg font-bold text-purple-600">{stat.yourScore}/5.0</span>
-                      <Badge variant="primary" size="sm">{stat.rank}</Badge>
-                    </div>
-                    <div className="text-xs text-gray-500 space-y-1">
-                      <div>Dept. avg: {stat.deptAverage}/5.0</div>
-                      <div>{stat.percentile} percentile</div>
-                      <div>Out of {stat.totalTeachers} faculty</div>
-                    </div>
-                    <Progress
-                      value={(stat.yourScore / stat.deptAverage) * 100}
-                      max={150}
-                      color={stat.yourScore > stat.deptAverage ? 'success' : 'warning'}
-                      size="sm"
-                      className="mt-2"
-                    />
-                  </div>
-                ))}
+      {/* Ranking Statistics - Horizontal Layout */}
+      <Card>
+        <Card.Header>
+          <Card.Title>Your Rankings</Card.Title>
+        </Card.Header>
+        <Card.Content>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {rankingStats.map((stat, index) => (
+              <div key={index} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <h4 className="font-medium text-gray-900 mb-3 text-center">{stat.metric}</h4>
+                <div className="text-center mb-3">
+                  <div className="text-2xl font-bold text-purple-600 mb-1">{stat.yourScore}/5.0</div>
+                  <Badge variant="primary" size="sm">{stat.rank}</Badge>
+                </div>
+                <div className="text-xs text-gray-500 space-y-1 text-center">
+                  <div>Dept. avg: {stat.deptAverage}/5.0</div>
+                  <div>{stat.percentile} percentile</div>
+                  <div>Out of {stat.totalTeachers} faculty</div>
+                </div>
+                <Progress
+                  value={(stat.yourScore / stat.deptAverage) * 100}
+                  max={150}
+                  color={stat.yourScore > stat.deptAverage ? 'success' : 'warning'}
+                  size="sm"
+                  className="mt-3"
+                />
               </div>
-            </Card.Content>
-          </Card>
-        </div>
-      </div>
+            ))}
+          </div>
+        </Card.Content>
+      </Card>
 
       {/* Peer Insights */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
           <Card.Header>
             <Card.Title>Strengths Compared to Peers</Card.Title>
           </Card.Header>
           <Card.Content>
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                 <span className="text-sm font-medium text-green-800">Teaching Quality</span>
                 <div className="flex items-center">
@@ -695,7 +873,7 @@ const PeerComparisonContent = ({ metrics }) => {
             <Card.Title>Improvement Opportunities</Card.Title>
           </Card.Header>
           <Card.Content>
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
                 <span className="text-sm font-medium text-yellow-800">Grant Funding</span>
                 <div className="flex items-center">

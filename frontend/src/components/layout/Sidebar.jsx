@@ -77,24 +77,18 @@ const menuItems = [
   }
 ];
 
-const Sidebar = ({ isOpen, onClose }) => {
+const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
   return (
     <>
-      {/* Mobile overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
-          onClick={onClose}
-        />
-      )}
-
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
-        isOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
-        <div className="flex flex-col h-full">
+      <div className={`transform transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:h-full bg-white shadow-lg ${
+        isOpen ? 'translate-x-0 fixed inset-y-0 left-0 z-50 w-64' : '-translate-x-full lg:translate-x-0'
+      } ${isCollapsed ? 'lg:w-16' : 'lg:w-64'} lg:block`}>
+        <div className="flex flex-col h-full relative">
           {/* Logo */}
-          <div className="flex items-center justify-between h-16 px-6 bg-gradient-to-r from-purple-600 to-indigo-600">
+          <div className={`flex items-center h-16 bg-gradient-to-r from-purple-600 to-indigo-600 ${
+            isCollapsed ? 'justify-center px-4' : 'px-6'
+          }`}>
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
@@ -103,14 +97,16 @@ const Sidebar = ({ isOpen, onClose }) => {
                   </svg>
                 </div>
               </div>
-              <div className="ml-3">
-                <h1 className="text-lg font-semibold text-white">EduMetrics</h1>
-              </div>
+              {!isCollapsed && (
+                <div className="ml-3 lg:block">
+                  <h1 className="text-lg font-semibold text-white">EduMetrics</h1>
+                </div>
+              )}
             </div>
             {/* Mobile close button */}
             <button
               onClick={onClose}
-              className="p-1 rounded-md text-white hover:bg-white hover:bg-opacity-20 lg:hidden"
+              className="p-1 rounded-md text-white hover:bg-white hover:bg-opacity-20 lg:hidden ml-auto"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -118,14 +114,25 @@ const Sidebar = ({ isOpen, onClose }) => {
             </button>
           </div>
 
+          {/* Desktop collapse button - positioned at sidebar edge */}
+          <button
+            onClick={onToggleCollapse}
+            className="hidden lg:block absolute top-1/2 -translate-y-1/2 translate-x-full p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-all duration-200 text-purple-600 hover:text-purple-700 z-20 border border-gray-200"
+            style={{ left: '100%', marginLeft: '-8px' }}
+          >
+            <svg className={`w-4 h-4 transition-transform duration-200 ${isCollapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
+          <nav className={`flex-1 py-6 space-y-2 ${isCollapsed ? 'px-2' : 'px-4'}`}>
             {menuItems.map((item) => (
               <NavLink
                 key={item.name}
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                  `flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-3'} py-2 text-sm font-medium rounded-lg transition-colors duration-200 relative group ${
                     isActive
                       ? 'bg-purple-100 text-purple-700 border-r-2 border-purple-700'
                       : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
@@ -138,24 +145,34 @@ const Sidebar = ({ isOpen, onClose }) => {
                   }
                 }}
               >
-                <span className="mr-3">{item.icon}</span>
-                {item.name}
+                <span className={isCollapsed ? '' : 'mr-3'}>{item.icon}</span>
+                {!isCollapsed && item.name}
+
+                {/* Tooltip for collapsed state */}
+                {isCollapsed && (
+                  <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+                    {item.name}
+                    <div className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+                  </div>
+                )}
               </NavLink>
             ))}
           </nav>
 
           {/* User Profile */}
-          <div className="p-4 border-t border-gray-200">
-            <div className="flex items-center">
+          <div className={`border-t border-gray-200 ${isCollapsed ? 'p-2' : 'p-4'}`}>
+            <div className={`flex items-center ${isCollapsed ? 'justify-center' : ''}`}>
               <div className="flex-shrink-0">
                 <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-indigo-400 rounded-full flex items-center justify-center">
                   <span className="text-sm font-medium text-white">JD</span>
                 </div>
               </div>
-              <div className="ml-3">
-                <div className="text-sm font-medium text-gray-900">Dr. Jane Doe</div>
-                <div className="text-xs text-gray-500">Computer Science</div>
-              </div>
+              {!isCollapsed && (
+                <div className="ml-3">
+                  <div className="text-sm font-medium text-gray-900">Dr. Jane Doe</div>
+                  <div className="text-xs text-gray-500">Computer Science</div>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -3,31 +3,29 @@ import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Line } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 
 ChartJS.register(
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend
 );
 
-const LineChart = ({ data, className = '', title = '', height = '300px' }) => {
-  const options = {
+const BarChart = ({ data, className = '', title = '', height = '300px', options = {} }) => {
+  const defaultOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: 'bottom',
+        position: 'top',
         labels: {
           color: '#374151',
           font: {
@@ -45,7 +43,7 @@ const LineChart = ({ data, className = '', title = '', height = '300px' }) => {
         cornerRadius: 8,
         callbacks: {
           label: function(context) {
-            return `${context.dataset.label}: ${context.parsed.y}/5.0`;
+            return `${context.dataset.label}: ${context.parsed.y.toFixed(1)}/5.0`;
           }
         }
       },
@@ -79,34 +77,21 @@ const LineChart = ({ data, className = '', title = '', height = '300px' }) => {
             return value <= 5 ? value.toFixed(1) : '';
           }
         },
-        afterBuildTicks: function(scale) {
-          // Ensure equal spacing between ticks
-          scale.ticks = [
-            { value: 0, label: '0.0' },
-            { value: 0.5, label: '0.5' },
-            { value: 1, label: '1.0' },
-            { value: 1.5, label: '1.5' },
-            { value: 2, label: '2.0' },
-            { value: 2.5, label: '2.5' },
-            { value: 3, label: '3.0' },
-            { value: 3.5, label: '3.5' },
-            { value: 4, label: '4.0' },
-            { value: 4.5, label: '4.5' },
-            { value: 5, label: '5.0' }
-          ];
-        },
       },
     },
-    elements: {
-      line: {
-        borderWidth: 3,
-        tension: 0.4,
-      },
-      point: {
-        radius: 4,
-        hoverRadius: 6,
-        borderWidth: 2,
-      },
+  };
+
+  // Merge default options with provided options
+  const mergedOptions = {
+    ...defaultOptions,
+    ...options,
+    plugins: {
+      ...defaultOptions.plugins,
+      ...options.plugins,
+    },
+    scales: {
+      ...defaultOptions.scales,
+      ...options.scales,
     },
   };
 
@@ -118,10 +103,10 @@ const LineChart = ({ data, className = '', title = '', height = '300px' }) => {
         </h3>
       )}
       <div style={{ height }}>
-        <Line data={data} options={options} />
+        <Bar data={data} options={mergedOptions} />
       </div>
     </div>
   );
 };
 
-export default LineChart;
+export default BarChart;
