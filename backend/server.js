@@ -40,6 +40,8 @@ app.use('/api/evaluations', require('./routes/evaluations'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/exports', require('./routes/exports'));
 app.use('/api/documents', require('./routes/documents'));
+app.use('/api/publications', require('./routes/publications'));
+app.use('/api/services', require('./routes/services'));
 
 // 健康检查端点
 app.get('/health', (req, res) => {

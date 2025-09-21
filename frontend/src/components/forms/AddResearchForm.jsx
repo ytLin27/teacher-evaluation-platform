@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
 import { Modal, Button } from '../ui';
+import { useToast } from '../../contexts/ToastContext';
 
-const AddResearchForm = ({ isOpen, onClose, onSuccess }) => {
+const AddResearchForm = ({ isOpen, onClose, onSuccess, initialType = 'publication' }) => {
   const [formData, setFormData] = useState({
-    type: 'publication',
+    type: initialType === 'Journal Article' ? 'Journal Article' : 'Conference Paper',
     title: '',
-    description: '',
+    venue: '',
     date: '',
-    impact_factor: '',
-    citation_count: '',
-    funding_amount: '',
-    status: 'published',
+    impact: '',
+    citations: '',
+    status: 'Published',
     url: ''
   });
+
+  const { showSuccess, showError } = useToast();
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -43,16 +45,24 @@ const AddResearchForm = ({ isOpen, onClose, onSuccess }) => {
       newErrors.type = 'Type is required';
     }
 
-    if (formData.impact_factor && isNaN(formData.impact_factor)) {
-      newErrors.impact_factor = 'Impact factor must be a number';
+    if (!formData.status) {
+      newErrors.status = 'Status is required';
     }
 
-    if (formData.citation_count && isNaN(formData.citation_count)) {
-      newErrors.citation_count = 'Citation count must be a number';
+    if (!formData.date) {
+      newErrors.date = 'Date is required';
     }
 
-    if (formData.funding_amount && isNaN(formData.funding_amount)) {
-      newErrors.funding_amount = 'Funding amount must be a number';
+    if (formData.impact && (isNaN(formData.impact) || parseFloat(formData.impact) < 0)) {
+      newErrors.impact = 'Impact factor must be a positive number';
+    }
+
+    if (formData.citations && (isNaN(formData.citations) || parseInt(formData.citations) < 0)) {
+      newErrors.citations = 'Citation count must be a positive number';
+    }
+
+    if (formData.url && !formData.url.match(/^https?:\/\/.+/)) {
+      newErrors.url = 'URL must be a valid web address starting with http:// or https://';
     }
 
     setErrors(newErrors);
@@ -69,17 +79,24 @@ const AddResearchForm = ({ isOpen, onClose, onSuccess }) => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3001/api/teachers/1/research', {
+      const payload = {
+        teacherId: 1, // Hardcoded for demo
+        title: formData.title.trim(),
+        type: formData.type,
+        venue: formData.venue.trim(),
+        status: formData.status,
+        date: formData.date,
+        citations: formData.citations ? parseInt(formData.citations) : 0,
+        impact: formData.impact ? parseFloat(formData.impact) : 0,
+        url: formData.url.trim()
+      };
+
+      const response = await fetch('http://localhost:3001/api/publications', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          impact_factor: formData.impact_factor ? parseFloat(formData.impact_factor) : null,
-          citation_count: formData.citation_count ? parseInt(formData.citation_count) : 0,
-          funding_amount: formData.funding_amount ? parseFloat(formData.funding_amount) : null
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
@@ -87,33 +104,31 @@ const AddResearchForm = ({ isOpen, onClose, onSuccess }) => {
 
         // Reset form
         setFormData({
-          type: 'publication',
+          type: initialType === 'Journal Article' ? 'Journal Article' : 'Conference Paper',
           title: '',
-          description: '',
+          venue: '',
           date: '',
-          impact_factor: '',
-          citation_count: '',
-          funding_amount: '',
-          status: 'published',
+          impact: '',
+          citations: '',
+          status: 'Published',
           url: ''
         });
         setErrors({});
 
         // Call success callback
         if (onSuccess) {
-          onSuccess(result.data);
+          onSuccess(result);
         }
 
-        // Show success message
-        alert('Research item added successfully!');
+        showSuccess('Publication added successfully!');
         onClose();
       } else {
         const errorData = await response.json();
-        alert(`Failed to add research item: ${errorData.error}`);
+        showError(`Failed to add publication: ${errorData.error}`);
       }
     } catch (error) {
-      console.error('Error adding research item:', error);
-      alert('Failed to add research item due to network error');
+      console.error('Error adding publication:', error);
+      showError('Failed to add publication due to network error');
     } finally {
       setLoading(false);
     }
@@ -121,24 +136,28 @@ const AddResearchForm = ({ isOpen, onClose, onSuccess }) => {
 
   const handleCancel = () => {
     setFormData({
-      type: 'publication',
+      type: initialType === 'Journal Article' ? 'Journal Article' : 'Conference Paper',
       title: '',
-      description: '',
+      venue: '',
       date: '',
-      impact_factor: '',
-      citation_count: '',
-      funding_amount: '',
-      status: 'published',
+      impact: '',
+      citations: '',
+      status: 'Published',
       url: ''
     });
     setErrors({});
     onClose();
   };
 
+  // Debug log
+  React.useEffect(() => {
+    console.log('AddResearchForm render - isOpen:', isOpen);
+  }, [isOpen]);
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="lg">
       <Modal.Header>
-        <Modal.Title>Add Research Item</Modal.Title>
+        <Modal.Title>Add Publication</Modal.Title>
       </Modal.Header>
 
       <Modal.Content>
@@ -152,13 +171,14 @@ const AddResearchForm = ({ isOpen, onClose, onSuccess }) => {
               name="type"
               value={formData.type}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                 errors.type ? 'border-red-500' : 'border-gray-300'
               }`}
             >
-              <option value="publication">Publication</option>
-              <option value="grant">Grant</option>
-              <option value="patent">Patent</option>
+              <option value="Journal Article">Journal Article</option>
+              <option value="Conference Paper">Conference Paper</option>
+              <option value="Book Chapter">Book Chapter</option>
+              <option value="Preprint">Preprint</option>
             </select>
             {errors.type && <p className="text-red-500 text-xs mt-1">{errors.type}</p>}
           </div>
@@ -173,137 +193,125 @@ const AddResearchForm = ({ isOpen, onClose, onSuccess }) => {
               name="title"
               value={formData.title}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                 errors.title ? 'border-red-500' : 'border-gray-300'
               }`}
-              placeholder="Enter title"
+              placeholder="Enter publication title"
             />
             {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
           </div>
 
-          {/* Description */}
+          {/* Venue */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
+              Venue
             </label>
-            <textarea
-              name="description"
-              value={formData.description}
+            <input
+              type="text"
+              name="venue"
+              value={formData.venue}
               onChange={handleChange}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Enter description"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              placeholder="Journal name, conference, or publisher"
             />
+          </div>
+
+          {/* Status */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Status *
+            </label>
+            <select
+              name="status"
+              value={formData.status}
+              onChange={handleChange}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+                errors.status ? 'border-red-500' : 'border-gray-300'
+              }`}
+            >
+              <option value="Published">Published</option>
+              <option value="Under Review">Under Review</option>
+              <option value="In Press">In Press</option>
+              <option value="Submitted">Submitted</option>
+              <option value="In Preparation">In Preparation</option>
+            </select>
+            {errors.status && <p className="text-red-500 text-xs mt-1">{errors.status}</p>}
           </div>
 
           {/* Date */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date
+              Date *
             </label>
             <input
               type="date"
               name="date"
               value={formData.date}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+                errors.date ? 'border-red-500' : 'border-gray-300'
+              }`}
             />
+            {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date}</p>}
           </div>
 
-          {/* Conditional fields based on type */}
-          {formData.type === 'publication' && (
-            <>
-              {/* Impact Factor */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Impact Factor
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  name="impact_factor"
-                  value={formData.impact_factor}
-                  onChange={handleChange}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                    errors.impact_factor ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="e.g., 3.45"
-                />
-                {errors.impact_factor && <p className="text-red-500 text-xs mt-1">{errors.impact_factor}</p>}
-              </div>
-
-              {/* Citation Count */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Citation Count
-                </label>
-                <input
-                  type="number"
-                  name="citation_count"
-                  value={formData.citation_count}
-                  onChange={handleChange}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                    errors.citation_count ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="e.g., 25"
-                />
-                {errors.citation_count && <p className="text-red-500 text-xs mt-1">{errors.citation_count}</p>}
-              </div>
-            </>
-          )}
-
-          {formData.type === 'grant' && (
+          <div className="grid grid-cols-2 gap-4">
+            {/* Citations */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Funding Amount ($)
+                Citations
+              </label>
+              <input
+                type="number"
+                min="0"
+                name="citations"
+                value={formData.citations}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+                  errors.citations ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="0"
+              />
+              {errors.citations && <p className="text-red-500 text-xs mt-1">{errors.citations}</p>}
+            </div>
+
+            {/* Impact Factor */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Impact Factor
               </label>
               <input
                 type="number"
                 step="0.01"
-                name="funding_amount"
-                value={formData.funding_amount}
+                min="0"
+                name="impact"
+                value={formData.impact}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                  errors.funding_amount ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+                  errors.impact ? 'border-red-500' : 'border-gray-300'
                 }`}
-                placeholder="e.g., 150000"
+                placeholder="0.00"
               />
-              {errors.funding_amount && <p className="text-red-500 text-xs mt-1">{errors.funding_amount}</p>}
+              {errors.impact && <p className="text-red-500 text-xs mt-1">{errors.impact}</p>}
             </div>
-          )}
-
-          {/* Status */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status
-            </label>
-            <select
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              <option value="published">Published</option>
-              <option value="under_review">Under Review</option>
-              <option value="in_progress">In Progress</option>
-              <option value="approved">Approved</option>
-              <option value="completed">Completed</option>
-            </select>
           </div>
 
-          {/* URL */}
+          {/* DOI/URL */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              URL
+              DOI/URL
             </label>
             <input
               type="url"
               name="url"
               value={formData.url}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="https://..."
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+                errors.url ? 'border-red-500' : 'border-gray-300'
+              }`}
+              placeholder="https://doi.org/... or https://..."
             />
+            {errors.url && <p className="text-red-500 text-xs mt-1">{errors.url}</p>}
           </div>
         </form>
       </Modal.Content>
@@ -313,7 +321,7 @@ const AddResearchForm = ({ isOpen, onClose, onSuccess }) => {
           Cancel
         </Button>
         <Button variant="primary" onClick={handleSubmit} disabled={loading}>
-          {loading ? 'Adding...' : 'Add Research Item'}
+          {loading ? 'Adding...' : 'Add Publication'}
         </Button>
       </Modal.Footer>
     </Modal>

@@ -47,8 +47,9 @@ const Research = () => {
   };
 
   const handleAddPublication = () => {
-    console.log('Add Publication clicked');
+    console.log('Add Publication clicked - current showAddForm:', showAddForm);
     setShowAddForm(true);
+    console.log('Set showAddForm to true');
   };
 
   const handleAddSuccess = (newItem) => {

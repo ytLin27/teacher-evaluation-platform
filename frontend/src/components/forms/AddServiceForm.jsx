@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, Button } from '../ui';
+import { useToast } from '../../contexts/ToastContext';
 
 const AddServiceForm = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -13,6 +14,7 @@ const AddServiceForm = ({ isOpen, onClose, onSuccess }) => {
     workload_hours: ''
   });
 
+  const { showSuccess, showError } = useToast();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -59,15 +61,24 @@ const AddServiceForm = ({ isOpen, onClose, onSuccess }) => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3001/api/teachers/1/service', {
+      const payload = {
+        teacherId: 1,
+        type: formData.type,
+        title: formData.title.trim(),
+        organization: formData.organization.trim(),
+        role: formData.role.trim(),
+        start_date: formData.start_date,
+        end_date: formData.end_date || null,
+        description: formData.description.trim(),
+        workload_hours: formData.workload_hours ? parseInt(formData.workload_hours) : null
+      };
+
+      const response = await fetch('http://localhost:3001/api/services', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          workload_hours: formData.workload_hours ? parseInt(formData.workload_hours) : null
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
@@ -90,15 +101,15 @@ const AddServiceForm = ({ isOpen, onClose, onSuccess }) => {
           onSuccess(result.data);
         }
 
-        alert('Service contribution added successfully!');
+        showSuccess('Service contribution added successfully!');
         onClose();
       } else {
         const errorData = await response.json();
-        alert(`Failed to add service contribution: ${errorData.error}`);
+        showError(`Failed to add service contribution: ${errorData.error}`);
       }
     } catch (error) {
       console.error('Error adding service contribution:', error);
-      alert('Failed to add service contribution due to network error');
+      showError('Failed to add service contribution due to network error');
     } finally {
       setLoading(false);
     }
@@ -136,7 +147,7 @@ const AddServiceForm = ({ isOpen, onClose, onSuccess }) => {
               name="type"
               value={formData.type}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                 errors.type ? 'border-red-500' : 'border-gray-300'
               }`}
             >
@@ -159,7 +170,7 @@ const AddServiceForm = ({ isOpen, onClose, onSuccess }) => {
               name="title"
               value={formData.title}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                 errors.title ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Enter title"
@@ -177,7 +188,7 @@ const AddServiceForm = ({ isOpen, onClose, onSuccess }) => {
               name="organization"
               value={formData.organization}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               placeholder="Enter organization"
             />
           </div>
@@ -192,7 +203,7 @@ const AddServiceForm = ({ isOpen, onClose, onSuccess }) => {
               name="role"
               value={formData.role}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               placeholder="e.g., Chair, Member, Reviewer"
             />
           </div>
@@ -207,7 +218,7 @@ const AddServiceForm = ({ isOpen, onClose, onSuccess }) => {
               name="start_date"
               value={formData.start_date}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
             />
           </div>
 
@@ -221,7 +232,7 @@ const AddServiceForm = ({ isOpen, onClose, onSuccess }) => {
               name="end_date"
               value={formData.end_date}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
             />
             <p className="text-xs text-gray-500 mt-1">Leave empty if ongoing</p>
           </div>
@@ -236,7 +247,7 @@ const AddServiceForm = ({ isOpen, onClose, onSuccess }) => {
               name="workload_hours"
               value={formData.workload_hours}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                 errors.workload_hours ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="e.g., 40"
@@ -254,7 +265,7 @@ const AddServiceForm = ({ isOpen, onClose, onSuccess }) => {
               value={formData.description}
               onChange={handleChange}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               placeholder="Enter description"
             />
           </div>

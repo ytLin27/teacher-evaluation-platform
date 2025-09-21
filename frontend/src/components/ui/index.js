@@ -14,3 +14,5 @@ export { default as SearchBar } from './SearchBar';
 export { default as Toast } from './Toast';
 export { default as Tabs } from './Tabs';
 export { default as Pagination } from './Pagination';
+export { default as EmptyState } from './EmptyState';
+export { default as ErrorState } from './ErrorState';

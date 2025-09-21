@@ -43,7 +43,7 @@ const Layout = ({ children, title }) => {
         />
 
         {/* Main content */}
-        <div className="flex flex-col overflow-hidden pl-3 lg:pl-4">
+        <div className="flex flex-col overflow-hidden pl-3 lg:pl-4 relative z-10">
           {/* Header */}
           <Header
             onMenuClick={toggleSidebar}

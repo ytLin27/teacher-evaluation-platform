@@ -51,7 +51,7 @@ const Modal = ({
   };
 
   return (
-    <div className={`fixed inset-0 z-50 overflow-y-auto ${overlayClassName}`}>
+    <div className={`fixed inset-0 z-[9999] overflow-y-auto ${overlayClassName}`}>
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         <div
           className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
@@ -61,13 +61,13 @@ const Modal = ({
         <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
 
         <div
-          className={`inline-block w-full ${sizes[size]} p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg ${className}`}
+          className={`relative inline-block w-full ${sizes[size]} p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg ${className}`}
           {...props}
         >
           {showCloseButton && (
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600"
+              className="absolute top-4 right-4 text-purple-400 hover:text-purple-600 focus:outline-none focus:text-purple-600 z-10 transition-colors duration-200"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -83,7 +83,7 @@ const Modal = ({
 
 const ModalHeader = ({ children, className = '', ...props }) => {
   return (
-    <div className={`mb-4 ${className}`} {...props}>
+    <div className={`mb-4 pb-3 border-b border-purple-100 bg-gradient-to-r from-purple-50 to-indigo-50 -mx-6 -mt-6 px-6 pt-6 ${className}`} {...props}>
       {children}
     </div>
   );
@@ -91,7 +91,7 @@ const ModalHeader = ({ children, className = '', ...props }) => {
 
 const ModalTitle = ({ children, className = '', ...props }) => {
   return (
-    <h3 className={`text-lg font-medium leading-6 text-gray-900 ${className}`} {...props}>
+    <h3 className={`text-lg font-semibold leading-6 text-purple-900 ${className}`} {...props}>
       {children}
     </h3>
   );
@@ -107,7 +107,7 @@ const ModalContent = ({ children, className = '', ...props }) => {
 
 const ModalFooter = ({ children, className = '', ...props }) => {
   return (
-    <div className={`flex justify-end space-x-3 ${className}`} {...props}>
+    <div className={`flex justify-end space-x-3 pt-4 border-t border-purple-100 -mx-6 -mb-6 px-6 pb-6 bg-purple-50 ${className}`} {...props}>
       {children}
     </div>
   );

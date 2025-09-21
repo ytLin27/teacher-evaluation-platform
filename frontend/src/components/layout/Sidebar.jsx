@@ -83,8 +83,8 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
       {/* Sidebar */}
       <div className={`transform transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:h-full bg-white shadow-lg ${
         isOpen ? 'translate-x-0 fixed inset-y-0 left-0 z-50 w-64' : '-translate-x-full lg:translate-x-0'
-      } ${isCollapsed ? 'lg:w-16' : 'lg:w-64'} lg:block`}>
-        <div className="flex flex-col h-full relative">
+      } ${isCollapsed ? 'lg:w-16' : 'lg:w-64'} lg:block relative z-40`}>
+        <div className="flex flex-col h-full">
           {/* Logo */}
           <div className={`flex items-center h-16 bg-gradient-to-r from-purple-600 to-indigo-600 ${
             isCollapsed ? 'justify-center px-4' : 'px-6'
@@ -117,11 +117,36 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
           {/* Desktop collapse button - positioned at sidebar edge */}
           <button
             onClick={onToggleCollapse}
-            className="hidden lg:block absolute top-1/2 -translate-y-1/2 translate-x-full p-2 rounded-full bg-white shadow-md hover:shadow-lg transition-all duration-200 text-purple-600 hover:text-purple-700 z-20 border border-gray-200"
-            style={{ left: '100%', marginLeft: '-8px' }}
+            className="hidden lg:block absolute top-1/2 right-0 w-8 h-8 min-w-[32px] min-h-[32px] rounded-full bg-white shadow-lg hover:shadow-xl transition-all duration-200 text-purple-600 hover:text-purple-700 z-10 border border-gray-200"
+            style={{
+              transform: 'translate(50%, -50%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            aria-expanded={!isCollapsed}
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onToggleCollapse();
+              }
+            }}
           >
-            <svg className={`w-4 h-4 transition-transform duration-200 ${isCollapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <svg
+              className={`w-4 h-4 transition-transform duration-200 ${isCollapsed ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              style={{
+                display: 'block',
+                strokeWidth: 2,
+                strokeLinecap: 'round',
+                strokeLinejoin: 'round',
+              }}
+            >
+              <path d="M15 19l-7-7 7-7" />
             </svg>
           </button>
 
@@ -150,9 +175,30 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, onToggleCollapse }) => {
 
                 {/* Tooltip for collapsed state */}
                 {isCollapsed && (
-                  <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+                  <div
+                    className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap shadow-xl"
+                    style={{
+                      zIndex: 9999,
+                      position: 'absolute',
+                      top: '50%',
+                      left: '100%',
+                      transform: 'translateY(-50%)',
+                      marginLeft: '8px',
+                      pointerEvents: 'none',
+                    }}
+                  >
                     {item.name}
-                    <div className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+                    <div
+                      className="absolute top-1/2 left-0 w-2 h-2 bg-gray-900 rotate-45"
+                      style={{
+                        zIndex: 9998,
+                        position: 'absolute',
+                        top: '50%',
+                        left: '0',
+                        transform: 'translate(-50%, -50%)',
+                        pointerEvents: 'none',
+                      }}
+                    ></div>
                   </div>
                 )}
               </NavLink>
