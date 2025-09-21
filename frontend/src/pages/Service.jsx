@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, Table, Badge, Button } from '../components/ui';
 import AddServiceForm from '../components/forms/AddServiceForm';
 import { useToast } from '../contexts/ToastContext';
 
 const Service = () => {
+  const navigate = useNavigate();
+
   // State for managing add form modal
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -220,7 +223,12 @@ const Service = () => {
       {/* Service Commitments */}
       <Card>
         <Card.Header>
-          <Card.Title>Professional Service Commitments</Card.Title>
+          <div className="flex items-center justify-between">
+            <Card.Title>Professional Service Commitments</Card.Title>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/service/records')}>
+              View All
+            </Button>
+          </div>
         </Card.Header>
         <Card.Content className="p-0">
           <Table>

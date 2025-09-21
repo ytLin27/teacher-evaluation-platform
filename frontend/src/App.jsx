@@ -9,6 +9,7 @@ import Professional from './pages/Professional';
 import Career from './pages/Career';
 import AllPublications from './pages/AllPublications';
 import AllGrants from './pages/AllGrants';
+import AllServiceRecords from './pages/AllServiceRecords';
 import Reports from './pages/Reports';
 import Documents from './pages/Documents';
 import Login from './pages/Login';
@@ -79,6 +80,13 @@ function App() {
               <ProtectedRoute>
                 <Layout title="All Grants">
                   <AllGrants />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/service/records" element={
+              <ProtectedRoute>
+                <Layout title="All Service Records">
+                  <AllServiceRecords />
                 </Layout>
               </ProtectedRoute>
             } />
