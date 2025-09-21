@@ -250,7 +250,8 @@ const Research = () => {
           </div>
         </Card.Header>
         <Card.Content className="p-0">
-          <Table>
+          <div className="overflow-x-auto">
+            <Table>
             <Table.Head>
               <tr>
                 <Table.Header>Title & Journal</Table.Header>
@@ -292,7 +293,8 @@ const Research = () => {
                 </Table.Row>
               ))}
             </Table.Body>
-          </Table>
+            </Table>
+          </div>
         </Card.Content>
       </Card>
 
@@ -307,7 +309,8 @@ const Research = () => {
           </div>
         </Card.Header>
         <Card.Content className="p-0">
-          <Table>
+          <div className="overflow-x-auto">
+            <Table>
             <Table.Head>
               <tr>
                 <Table.Header>Grant Title</Table.Header>
@@ -346,7 +349,8 @@ const Research = () => {
                 </Table.Row>
               ))}
             </Table.Body>
-          </Table>
+            </Table>
+          </div>
         </Card.Content>
       </Card>
 

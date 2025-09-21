@@ -325,7 +325,8 @@ const Professional = () => {
           <Card.Title>Professional Certifications</Card.Title>
         </Card.Header>
         <Card.Content className="p-0">
-          <Table>
+          <div className="overflow-x-auto">
+            <Table>
             <Table.Head>
               <tr>
                 <Table.Header>Certification</Table.Header>
@@ -364,7 +365,8 @@ const Professional = () => {
                 </Table.Row>
               ))}
             </Table.Body>
-          </Table>
+            </Table>
+          </div>
         </Card.Content>
       </Card>
 

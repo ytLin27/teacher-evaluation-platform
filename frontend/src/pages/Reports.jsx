@@ -356,7 +356,8 @@ const Reports = () => {
           ) : reports.length === 0 ? (
             <EmptyReports onGenerate={() => setShowGenerateModal(true)} />
           ) : (
-            <Table>
+            <div className="overflow-x-auto">
+              <Table>
               <Table.Head>
                 <tr>
                   <Table.Header>Report Name</Table.Header>
@@ -445,6 +446,7 @@ const Reports = () => {
                 ))}
               </Table.Body>
             </Table>
+            </div>
           )}
         </Card.Content>
       </Card>

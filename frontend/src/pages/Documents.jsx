@@ -390,15 +390,25 @@ const Documents = () => {
       ) : documents.length === 0 ? (
         <EmptyDocuments onUpload={() => fileInputRef.current?.click()} />
       ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="overflow-x-hidden" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px'}}>
           {documents.map((document) => (
-            <Card key={document.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-              <Card.Content className="p-4">
+            <Card key={document.id} className="hover:shadow-lg transition-shadow cursor-pointer" style={{maxWidth: '100%', borderRadius: '16px', overflow: 'hidden'}}>
+              <Card.Content style={{padding: '16px 20px'}}>
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center space-x-3">
                     {getFileIcon(document.mime_type)}
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-medium text-gray-900 truncate">
+                      <h3
+                        className="text-sm font-medium text-gray-900"
+                        style={{
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          wordBreak: 'break-word'
+                        }}
+                        title={document.name}
+                      >
                         {document.name}
                       </h3>
                       <p className="text-xs text-gray-500">{formatFileSize(document.file_size)}</p>
@@ -418,34 +428,36 @@ const Documents = () => {
                   <span>Uploaded {formatDate(document.uploaded_at)}</span>
                 </div>
 
-                <div className="flex space-x-2">
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px'}}>
                   <Button
                     variant="outline"
-                    size="sm"
                     onClick={() => handlePreview(document)}
-                    className="flex-1"
+                    style={{maxWidth: '60%', height: '40px', fontSize: '14px', borderRadius: '16px', border: '1px solid #6366F1', color: '#6366F1'}}
                   >
                     Preview
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDownload(document)}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(document.id)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </Button>
+                  <div style={{display: 'flex', gap: '8px'}}>
+                    <button
+                      onClick={() => handleDownload(document)}
+                      style={{width: '32px', height: '32px', borderRadius: '16px', border: 'none', background: '#F3F4F6', color: '#6366F1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'}}
+                      onMouseEnter={(e) => e.target.style.background = '#E5E7EB'}
+                      onMouseLeave={(e) => e.target.style.background = '#F3F4F6'}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleDelete(document.id)}
+                      style={{width: '32px', height: '32px', borderRadius: '16px', border: 'none', background: '#F3F4F6', color: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'}}
+                      onMouseEnter={(e) => e.target.style.background = '#FEE2E2'}
+                      onMouseLeave={(e) => e.target.style.background = '#F3F4F6'}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </Card.Content>
             </Card>
