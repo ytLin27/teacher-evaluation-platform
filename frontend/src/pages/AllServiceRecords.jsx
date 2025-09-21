@@ -180,64 +180,54 @@ const AllServiceRecords = () => {
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Title & Role
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Type
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Organization
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Period
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Workload
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                <Table>
+                  <Table.Head>
+                    <Table.Row>
+                      <Table.Header className="w-80 min-w-[320px]">Title & Role</Table.Header>
+                      <Table.Header className="w-32 min-w-[128px]">Type</Table.Header>
+                      <Table.Header className="w-48 min-w-[192px]">Organization</Table.Header>
+                      <Table.Header className="w-40 min-w-[160px]">Period</Table.Header>
+                      <Table.Header className="w-28 min-w-[112px]">Workload</Table.Header>
+                    </Table.Row>
+                  </Table.Head>
+                  <Table.Body>
                     {services.map((service) => (
-                      <tr key={service.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900 max-w-md truncate" title={service.title}>
+                      <Table.Row key={service.id}>
+                        <Table.Cell className="w-80">
+                          <div className="max-w-[300px]">
+                            <div className="truncate font-semibold" title={service.title}>
                               {service.title}
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-gray-500 mt-1">
                               Role: {service.role || 'N/A'}
                             </div>
                             {service.description && (
-                              <div className="text-xs text-gray-400 mt-1 max-w-md truncate" title={service.description}>
+                              <div className="text-xs text-gray-400 mt-1 truncate" title={service.description}>
                                 {service.description}
                               </div>
                             )}
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        </Table.Cell>
+                        <Table.Cell className="w-32">
                           <Badge variant={getTypeColor(service.type)} size="sm">
                             {service.type}
                           </Badge>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        </Table.Cell>
+                        <Table.Cell className="w-48 truncate" title={service.organization}>
                           {service.organization || 'N/A'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          <div>
+                        </Table.Cell>
+                        <Table.Cell className="w-40">
+                          <div className="text-sm">
                             {formatDate(service.start_date)} - {service.end_date ? formatDate(service.end_date) : 'Present'}
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        </Table.Cell>
+                        <Table.Cell className="w-28">
                           {service.workload_hours ? `${service.workload_hours} hours` : 'N/A'}
-                        </td>
-                      </tr>
+                        </Table.Cell>
+                      </Table.Row>
                     ))}
-                  </tbody>
-                </table>
+                  </Table.Body>
+                </Table>
               </div>
 
               {pagination.totalPages > 1 && (

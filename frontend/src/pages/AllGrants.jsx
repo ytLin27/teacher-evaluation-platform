@@ -168,35 +168,64 @@ const AllGrants = () => {
             />
           ) : (
             <>
+              <div className="overflow-x-auto max-w-full">
               <Table>
-              <Table.Header>
-                <Table.Row>
-                  <Table.Head>Project Title</Table.Head>
-                  <Table.Head>Agency</Table.Head>
-                  <Table.Head>Amount</Table.Head>
-                  <Table.Head>Period</Table.Head>
-                  <Table.Head>Status</Table.Head>
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
+                <Table.Head>
+                  <Table.Row>
+                    <Table.Header className="w-80 min-w-[320px]" sortable={true}>Project Title & Role</Table.Header>
+                    <Table.Header className="w-48 min-w-[192px]">Agency</Table.Header>
+                    <Table.Header className="w-32 min-w-[128px] text-right" sortable={true}>Amount</Table.Header>
+                    <Table.Header className="w-40 min-w-[160px]">Period</Table.Header>
+                    <Table.Header className="w-28 min-w-[112px]" sortable={true}>Status</Table.Header>
+                  </Table.Row>
+                </Table.Head>
+                <Table.Body>
                 {grants.map((grant, index) => (
-                  <Table.Row key={index}>
-                    <Table.Cell className="font-medium">{grant.title}</Table.Cell>
-                    <Table.Cell>{grant.agency}</Table.Cell>
-                    <Table.Cell>{formatCurrency(grant.amount)}</Table.Cell>
-                    <Table.Cell>{grant.start_year} - {grant.end_year}</Table.Cell>
-                    <Table.Cell>
+                  <Table.Row key={grant.id || index}>
+                    <Table.Cell className="font-medium w-80">
+                      <div className="max-w-[300px]">
+                        <div className="truncate font-semibold" title={grant.title}>
+                          {grant.title}
+                        </div>
+                        {grant.role && (
+                          <div className="mt-1">
+                            <Badge
+                              variant={grant.role === 'PI' ? 'default' : 'secondary'}
+                              size="sm"
+                            >
+                              {grant.role}
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+                    </Table.Cell>
+                    <Table.Cell className="w-48 max-w-[192px] truncate" title={grant.agency}>
+                      {grant.agency || 'N/A'}
+                    </Table.Cell>
+                    <Table.Cell className="w-32 text-right font-medium text-green-700">
+                      {grant.amount ? formatCurrency(grant.amount) : 'N/A'}
+                    </Table.Cell>
+                    <Table.Cell className="w-40">
+                      <div className="text-sm">
+                        {grant.start_year && grant.end_year
+                          ? `${grant.start_year} - ${grant.end_year}`
+                          : 'N/A'
+                        }
+                      </div>
+                    </Table.Cell>
+                    <Table.Cell className="w-28">
                       <Badge
                         variant={grant.status === 'Active' ? 'default' :
                                 grant.status === 'Completed' ? 'secondary' : 'outline'}
                       >
-                        {grant.status}
+                        {grant.status || 'Unknown'}
                       </Badge>
                     </Table.Cell>
                   </Table.Row>
                 ))}
               </Table.Body>
             </Table>
+              </div>
 
             {pagination.totalPages > 1 && (
               <div className="mt-6 flex justify-center">

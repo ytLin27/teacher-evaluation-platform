@@ -163,44 +163,54 @@ const AllPublications = () => {
             />
           ) : (
             <>
+              <div className="overflow-x-auto max-w-full">
               <Table>
-                <Table.Header>
+                <Table.Head>
                   <Table.Row>
-                    <Table.Head>Title</Table.Head>
-                    <Table.Head>Journal/Venue</Table.Head>
-                    <Table.Head>Year</Table.Head>
-                    <Table.Head>Citations</Table.Head>
-                    <Table.Head>Impact Factor</Table.Head>
+                    <Table.Header className="w-80 min-w-[320px]" sortable={true}>Title</Table.Header>
+                    <Table.Header className="w-48 min-w-[192px]">Journal/Venue</Table.Header>
+                    <Table.Header className="w-20 min-w-[80px]" sortable={true}>Year</Table.Header>
+                    <Table.Header className="w-24 min-w-[96px] text-right" sortable={true}>Citations</Table.Header>
+                    <Table.Header className="w-28 min-w-[112px] text-right">Impact Factor</Table.Header>
                   </Table.Row>
-                </Table.Header>
+                </Table.Head>
                 <Table.Body>
                   {publications.map((pub) => (
                     <Table.Row key={pub.id}>
-                      <Table.Cell className="font-medium max-w-xs">
-                        <div className="truncate" title={pub.title}>
-                          {pub.title}
+                      <Table.Cell className="font-medium w-80">
+                        <div className="max-w-[300px]">
+                          <div className="truncate font-semibold" title={pub.title}>
+                            {pub.title}
+                          </div>
+                          {pub.url && (
+                            <a
+                              href={pub.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:underline mt-1 inline-block"
+                            >
+                              View paper
+                            </a>
+                          )}
                         </div>
-                        {pub.url && (
-                          <a
-                            href={pub.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-blue-600 hover:underline"
-                          >
-                            View paper
-                          </a>
-                        )}
                       </Table.Cell>
-                      <Table.Cell>{pub.journal || pub.description}</Table.Cell>
-                      <Table.Cell>{pub.year}</Table.Cell>
-                      <Table.Cell>{pub.citations || pub.citation_count || 0}</Table.Cell>
-                      <Table.Cell>
-                        {pub.impact_factor ? pub.impact_factor.toFixed(1) : 'N/A'}
+                      <Table.Cell className="w-48 max-w-[192px] truncate" title={pub.journal || pub.description}>
+                        {pub.journal || pub.description || 'N/A'}
+                      </Table.Cell>
+                      <Table.Cell className="w-20 text-center">{pub.year || 'N/A'}</Table.Cell>
+                      <Table.Cell className="w-24 text-right font-medium">
+                        {pub.citations || pub.citation_count || 0}
+                      </Table.Cell>
+                      <Table.Cell className="w-28 text-right">
+                        <span className={pub.impact_factor && pub.impact_factor >= 3 ? 'text-green-600 font-medium' : ''}>
+                          {pub.impact_factor ? pub.impact_factor.toFixed(1) : 'N/A'}
+                        </span>
                       </Table.Cell>
                     </Table.Row>
                   ))}
                 </Table.Body>
               </Table>
+              </div>
 
               {pagination.totalPages > 1 && (
                 <div className="mt-6 flex justify-center">
