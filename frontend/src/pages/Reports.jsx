@@ -122,7 +122,13 @@ const Reports = () => {
       await new Promise(resolve => setTimeout(resolve, 500));
 
       // Filter data based on search and status
+      // 数据库层面过滤：永远排除 generating 和 failed 状态的报告
       let filteredData = mockReportsData.filter(report => {
+        // 首先过滤掉 generating 和 failed 状态
+        if (report.status === 'generating' || report.status === 'failed') {
+          return false;
+        }
+
         const matchesSearch = !search ||
           report.name.toLowerCase().includes(search.toLowerCase()) ||
           report.scope.toLowerCase().includes(search.toLowerCase());
@@ -172,8 +178,6 @@ const Reports = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'completed': return 'success';
-      case 'generating': return 'warning';
-      case 'failed': return 'danger';
       default: return 'secondary';
     }
   };
@@ -186,18 +190,6 @@ const Reports = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         );
-      case 'generating':
-        return (
-          <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-        );
-      case 'failed':
-        return (
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        );
       default:
         return null;
     }
@@ -206,18 +198,118 @@ const Reports = () => {
   const handleGenerateReport = async (reportData) => {
     setGenerating(true);
     try {
-      // Simulate API call to generate report
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // 构建请求参数
+      const params = new URLSearchParams({
+        scope: reportData.scope,
+        format: (reportData.format || 'PDF').toLowerCase(),
+        teacherId: TEACHER_ID
+      });
 
-      showSuccess('Report generation started successfully!');
+      // Portfolio 特定参数
+      if (reportData.scope === 'portfolio') {
+        if (reportData.includeCharts) {
+          params.append('include', reportData.includeRawTables ? 'charts,raw' : 'charts');
+        } else if (reportData.includeRawTables) {
+          params.append('include', 'raw');
+        }
+
+        // 处理日期范围
+        if (reportData.dateRange === 'current_year') {
+          const currentYear = new Date().getFullYear();
+          params.append('from', `${currentYear}-01-01`);
+          params.append('to', `${currentYear}-12-31`);
+        } else if (reportData.dateRange === 'last_academic_year') {
+          const currentYear = new Date().getFullYear();
+          const academicStartYear = new Date().getMonth() >= 8 ? currentYear : currentYear - 1;
+          params.append('from', `${academicStartYear - 1}-09-01`);
+          params.append('to', `${academicStartYear}-08-31`);
+        }
+      }
+
+      // 调用统一的报告生成 API
+      const response = await fetch(`${API_BASE}/exports/reports/generate?${params}`, {
+        method: 'GET'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to generate ${reportData.scope} report`);
+      }
+
+      // 直接下载文件
+      const blob = await response.blob();
+      const contentDisposition = response.headers.get('content-disposition');
+      const filename = contentDisposition
+        ? contentDisposition.split('filename=')[1]?.replace(/['"]/g, '')
+        : `${reportData.scope}_report.pdf`;
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      showSuccess(`${reportData.scope} report generated and downloaded: ${filename}`);
+
+      // 记录下载次数
+      try {
+        await fetch(`${API_BASE}/exports/reports/download-count`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            filename: filename,
+            teacherId: TEACHER_ID
+          })
+        });
+      } catch (error) {
+        console.warn('Failed to record download count:', error);
+      }
+
+      // 询问是否要归档到 Documents
+      if (window.confirm('Report generated successfully! Would you like to archive it to Documents?')) {
+        await archiveReportToDocuments(blob, filename, reportData);
+      }
+
       setShowGenerateModal(false);
-
-      // Refresh the reports list to show the new report
+      // Refresh the reports list
       await fetchReports(1, searchTerm, filterStatus);
+
     } catch (error) {
-      showError('Failed to start report generation');
+      console.error('Report generation error:', error);
+      showError('Failed to generate report: ' + error.message);
     } finally {
       setGenerating(false);
+    }
+  };
+
+  // 归档报告到 Documents 的函数
+  const archiveReportToDocuments = async (blob, filename, reportData) => {
+    try {
+      const formData = new FormData();
+      const file = new File([blob], filename, { type: blob.type });
+      formData.append('file', file);
+      formData.append('teacherId', TEACHER_ID);
+      formData.append('tags', `report,portfolio,origin=report,scope=${reportData.scope}`);
+
+      const response = await fetch(`${API_BASE}/documents/upload`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to archive report to documents');
+      }
+
+      const result = await response.json();
+      showSuccess(`Report archived to Documents successfully! Document ID: ${result.document.id}`);
+
+    } catch (error) {
+      console.error('Archive error:', error);
+      showError('Failed to archive report to Documents: ' + error.message);
     }
   };
 
@@ -310,19 +402,17 @@ const Reports = () => {
             <div className="flex-1">
               <SearchBar
                 value={searchTerm}
-                onChange={setSearchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search reports..."
               />
             </div>
             <div className="w-full md:w-48">
               <Select
                 value={filterStatus}
-                onChange={setFilterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
                 options={[
                   { value: 'all', label: 'All Status' },
-                  { value: 'completed', label: 'Completed' },
-                  { value: 'generating', label: 'Generating' },
-                  { value: 'failed', label: 'Failed' }
+                  { value: 'completed', label: 'Completed' }
                 ]}
               />
             </div>
@@ -380,9 +470,6 @@ const Reports = () => {
                         </div>
                         <div>
                           <div className="font-medium text-gray-900 text-sm">{report.name}</div>
-                          {report.status === 'failed' && report.error_message && (
-                            <div className="text-xs text-red-600 mt-1">{report.error_message}</div>
-                          )}
                         </div>
                       </div>
                     </Table.Cell>
@@ -399,11 +486,6 @@ const Reports = () => {
                         <Badge variant={getStatusColor(report.status)} size="sm">
                           {report.status}
                         </Badge>
-                        {report.status === 'generating' && report.progress && (
-                          <div className="ml-2 text-xs text-gray-500">
-                            {report.progress}%
-                          </div>
-                        )}
                       </div>
                     </Table.Cell>
                     <Table.Cell>
@@ -480,6 +562,7 @@ const GenerateReportModal = ({ isOpen, onClose, onGenerate, loading }) => {
     scope: 'overview',
     format: 'PDF',
     includeCharts: true,
+    includeRawTables: false,
     dateRange: 'current_year'
   });
 
@@ -489,7 +572,8 @@ const GenerateReportModal = ({ isOpen, onClose, onGenerate, loading }) => {
     { value: 'research', label: 'Research Portfolio' },
     { value: 'service', label: 'Service Contributions' },
     { value: 'professional', label: 'Professional Development' },
-    { value: 'career', label: 'Career History' }
+    { value: 'career', label: 'Career History' },
+    { value: 'portfolio', label: 'All Sections (Portfolio)' }
   ];
 
   const formatOptions = [
@@ -498,21 +582,33 @@ const GenerateReportModal = ({ isOpen, onClose, onGenerate, loading }) => {
     { value: 'JSON', label: 'JSON Data' }
   ];
 
-  const dateRangeOptions = [
-    { value: 'current_year', label: 'Current Year' },
-    { value: 'last_year', label: 'Last Year' },
-    { value: 'last_2_years', label: 'Last 2 Years' },
-    { value: 'all_time', label: 'All Time' }
-  ];
+  const getDateRangeOptions = (scope) => {
+    if (scope === 'portfolio') {
+      return [
+        { value: 'current_year', label: 'Current Year' },
+        { value: 'last_academic_year', label: 'Last Academic Year' },
+        { value: 'custom', label: 'Custom Range' }
+      ];
+    }
+    return [
+      { value: 'current_year', label: 'Current Year' },
+      { value: 'last_year', label: 'Last Year' },
+      { value: 'last_2_years', label: 'Last 2 Years' },
+      { value: 'all_time', label: 'All Time' }
+    ];
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     onGenerate(formData);
   };
 
-  const generateDefaultName = () => {
-    const scopeLabel = scopeOptions.find(opt => opt.value === formData.scope)?.label || 'Report';
+  const generateDefaultName = (scope = formData.scope) => {
+    const scopeLabel = scopeOptions.find(opt => opt.value === scope)?.label || 'Report';
     const year = new Date().getFullYear();
+    if (scope === 'portfolio') {
+      return `Portfolio Report ${year}`;
+    }
     return `${scopeLabel} ${year}`;
   };
 
@@ -547,11 +643,26 @@ const GenerateReportModal = ({ isOpen, onClose, onGenerate, loading }) => {
           </label>
           <Select
             value={formData.scope}
-            onChange={(value) => setFormData(prev => ({
-              ...prev,
-              scope: value,
-              name: generateDefaultName()
-            }))}
+            onChange={(value) => {
+              const newData = {
+                ...formData,
+                scope: value,
+                name: generateDefaultName(value)
+              };
+
+              // 为 Portfolio 设置默认值
+              if (value === 'portfolio') {
+                newData.format = 'PDF';
+                newData.includeCharts = true;
+                // 如果当前日期范围不适用于 portfolio，重置为 current_year
+                const portfolioRanges = ['current_year', 'last_academic_year', 'custom'];
+                if (!portfolioRanges.includes(formData.dateRange)) {
+                  newData.dateRange = 'current_year';
+                }
+              }
+
+              setFormData(newData);
+            }}
             options={scopeOptions}
           />
         </div>
@@ -562,7 +673,7 @@ const GenerateReportModal = ({ isOpen, onClose, onGenerate, loading }) => {
           </label>
           <Select
             value={formData.format}
-            onChange={(value) => setFormData(prev => ({ ...prev, format: value }))}
+            onChange={(e) => setFormData(prev => ({ ...prev, format: e.target.value }))}
             options={formatOptions}
           />
         </div>
@@ -573,8 +684,8 @@ const GenerateReportModal = ({ isOpen, onClose, onGenerate, loading }) => {
           </label>
           <Select
             value={formData.dateRange}
-            onChange={(value) => setFormData(prev => ({ ...prev, dateRange: value }))}
-            options={dateRangeOptions}
+            onChange={(e) => setFormData(prev => ({ ...prev, dateRange: e.target.value }))}
+            options={getDateRangeOptions(formData.scope)}
           />
         </div>
 
@@ -590,6 +701,21 @@ const GenerateReportModal = ({ isOpen, onClose, onGenerate, loading }) => {
             Include charts and visualizations
           </label>
         </div>
+
+        {formData.scope === 'portfolio' && (
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="includeRawTables"
+              checked={formData.includeRawTables}
+              onChange={(e) => setFormData(prev => ({ ...prev, includeRawTables: e.target.checked }))}
+              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+            />
+            <label htmlFor="includeRawTables" className="ml-2 block text-sm text-gray-900">
+              Include raw tables as CSV/Excel <span className="text-gray-500">(ZIP附件形式)</span>
+            </label>
+          </div>
+        )}
 
         <div className="flex justify-end space-x-3 pt-4">
           <Button type="button" variant="outline" onClick={onClose}>

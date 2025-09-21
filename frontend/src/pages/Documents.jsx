@@ -320,7 +320,7 @@ const Documents = () => {
             <div className="flex-1">
               <SearchBar
                 value={searchTerm}
-                onChange={setSearchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search documents..."
               />
             </div>
