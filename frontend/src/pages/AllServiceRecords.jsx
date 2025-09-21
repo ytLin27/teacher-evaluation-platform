@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, Table, Badge, Button, SearchBar, Pagination, EmptyState, ErrorState } from '../components/ui';
 
@@ -14,6 +14,9 @@ const AllServiceRecords = () => {
     total: 0,
     totalPages: 0
   });
+  const [searchInput, setSearchInput] = useState('');
+  const searchTimeoutRef = useRef(null);
+  const [isSearching, setIsSearching] = useState(false);
 
   // URL参数
   const page = parseInt(searchParams.get('page')) || 1;
@@ -21,10 +24,17 @@ const AllServiceRecords = () => {
   const q = searchParams.get('q') || '';
   const type = searchParams.get('type') || '';
 
+  // 初始化搜索输入框的值
+  useEffect(() => {
+    setSearchInput(q);
+  }, [q]);
+
+  // 监听URL参数变化进行数据获取
   useEffect(() => {
     fetchServices();
   }, [page, size, q, type]);
 
+  // 基于URL参数获取数据
   const fetchServices = async () => {
     try {
       setLoading(true);
@@ -57,20 +67,52 @@ const AllServiceRecords = () => {
     }
   };
 
+
   const handleBack = () => {
     navigate('/service');
   };
 
-  const handleSearch = (value) => {
+  // 更新URL参数
+  const updateURLParams = useCallback((searchValue) => {
     const newParams = new URLSearchParams(searchParams);
-    if (value) {
-      newParams.set('q', value);
+    if (searchValue.trim()) {
+      newParams.set('q', searchValue.trim());
     } else {
       newParams.delete('q');
     }
     newParams.set('page', '1');
     setSearchParams(newParams);
+  }, [searchParams, setSearchParams]);
+
+  // 处理搜索输入变化（防抖）
+  const handleSearchInputChange = (value) => {
+    setSearchInput(value);
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      updateURLParams(value);
+    }, 700); // 0.7秒防抖延迟
   };
+
+  // 处理 Enter 键或失焦立即搜索
+  const handleSearchSubmit = () => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    updateURLParams(searchInput);
+  };
+
+  // 清理定时器
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handlePageChange = (newPage) => {
     const newParams = new URLSearchParams(searchParams);
@@ -156,8 +198,14 @@ const AllServiceRecords = () => {
       <div className="w-full max-w-md">
         <SearchBar
           placeholder="Search service records by title, organization, or role..."
-          value={q}
-          onChange={(e) => handleSearch(e.target.value)}
+          value={searchInput}
+          onChange={(e) => handleSearchInputChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              handleSearchSubmit();
+            }
+          }}
+          onBlur={handleSearchSubmit}
         />
       </div>
 
@@ -171,10 +219,11 @@ const AllServiceRecords = () => {
           {services.length === 0 ? (
             <EmptyState
               title="No service records found"
-              message={q ? "Try adjusting your search" : "No service contributions available"}
-              action={q ? {
-                label: "Clear search",
-                onClick: () => setSearchParams({})
+              description={q ? "Try adjusting your search terms or clear the search" : "No service contributions available"}
+              actionText={q ? "Clear search" : undefined}
+              onAction={q ? () => {
+                setSearchInput('');
+                updateURLParams('');
               } : undefined}
             />
           ) : (

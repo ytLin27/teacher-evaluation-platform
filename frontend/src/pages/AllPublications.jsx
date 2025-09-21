@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, Table, Badge, Button, SearchBar, Pagination, EmptyState, ErrorState } from '../components/ui';
 
@@ -14,6 +14,9 @@ const AllPublications = () => {
     total: 0,
     totalPages: 0
   });
+  const [searchInput, setSearchInput] = useState('');
+  const searchTimeoutRef = useRef(null);
+  const [isSearching, setIsSearching] = useState(false);
 
   // URL参数
   const page = parseInt(searchParams.get('page')) || 1;
@@ -22,10 +25,17 @@ const AllPublications = () => {
   const type = searchParams.get('type') || '';
   const year = searchParams.get('year') || '';
 
+  // 初始化搜索输入框的值
+  useEffect(() => {
+    setSearchInput(q);
+  }, [q]);
+
+  // 监听URL参数变化进行数据获取
   useEffect(() => {
     fetchPublications();
   }, [page, size, q, type, year]);
 
+  // 基于URL参数获取数据
   const fetchPublications = async () => {
     try {
       setLoading(true);
@@ -59,20 +69,52 @@ const AllPublications = () => {
     }
   };
 
+
   const handleBack = () => {
     navigate('/research');
   };
 
-  const handleSearch = (value) => {
+  // 更新URL参数
+  const updateURLParams = useCallback((searchValue) => {
     const newParams = new URLSearchParams(searchParams);
-    if (value) {
-      newParams.set('q', value);
+    if (searchValue.trim()) {
+      newParams.set('q', searchValue.trim());
     } else {
       newParams.delete('q');
     }
-    newParams.set('page', '1'); // 重置到第一页
+    newParams.set('page', '1');
     setSearchParams(newParams);
+  }, [searchParams, setSearchParams]);
+
+  // 处理搜索输入变化（防抖）
+  const handleSearchInputChange = (value) => {
+    setSearchInput(value);
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      updateURLParams(value);
+    }, 700); // 0.7秒防抖延迟
   };
+
+  // 处理 Enter 键或失焦立即搜索
+  const handleSearchSubmit = () => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    updateURLParams(searchInput);
+  };
+
+  // 清理定时器
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handlePageChange = (newPage) => {
     const newParams = new URLSearchParams(searchParams);
@@ -140,8 +182,14 @@ const AllPublications = () => {
       <div className="w-full max-w-md">
         <SearchBar
           placeholder="Search publications by title, journal, type, or year..."
-          value={q}
-          onChange={(e) => handleSearch(e.target.value)}
+          value={searchInput}
+          onChange={(e) => handleSearchInputChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              handleSearchSubmit();
+            }
+          }}
+          onBlur={handleSearchSubmit}
         />
       </div>
 
@@ -155,10 +203,11 @@ const AllPublications = () => {
           {publications.length === 0 ? (
             <EmptyState
               title="No publications found"
-              message={q ? "Try adjusting your search terms" : "No research publications available"}
-              action={q ? {
-                label: "Clear search",
-                onClick: () => handleSearch('')
+              description={q ? "Try adjusting your search terms or clear the search" : "No research publications available"}
+              actionText={q ? "Clear search" : undefined}
+              onAction={q ? () => {
+                setSearchInput('');
+                updateURLParams('');
               } : undefined}
             />
           ) : (
